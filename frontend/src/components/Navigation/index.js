@@ -29,6 +29,7 @@ import { NavLink } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import ProfileButton from './ProfileButton';
 import './Navigation.css';
+import logo from './logo.svg';
 // import NewSpot from '../NewSpot';
 
 
@@ -39,7 +40,7 @@ function Navigation({ isLoaded }) {
     <div className="NavBar">
 
       <NavLink exact to="/" className="Home-Icon">
-      <img id="logo" src="https://cdn.discordapp.com/attachments/320286625521336341/1127852221082652724/logo2.png" alt="logo"/>
+      <img id="logo" src={logo} alt="bobabnb"/>
       </NavLink>
 
       {isLoaded && (
