@@ -8,6 +8,8 @@ import OpenModalButton from "../OpenModalButton";
 import CreateReviewModal from "../CreateReviewModal";
 import DeleteReviewModal from "../DeleteReviewModal";
 
+const NO_PHOTO = "https://placehold.co/600x400/e8e8e8/777777.png?text=No+Photo+Available";
+
 export default function SpotDetail() {
   const { spotId } = useParams();
   const dispatch = useDispatch();
@@ -37,6 +39,11 @@ export default function SpotDetail() {
     return <div>Loading Reviews...</div>
   }
 
+  // The API does not guarantee image order, so pick the preview explicitly and
+  // keep it out of the thumbnail grid.
+  const previewImage = spot.SpotImages.find((image) => image.preview === true);
+  const otherImages = spot.SpotImages.filter((image) => image !== previewImage);
+
   const handleReserveClick = () => {
     alert("Feature Coming Soon...");
   };
@@ -58,27 +65,29 @@ export default function SpotDetail() {
       </div>
       <div className="images-container">
         <div className="preview-image">
-        {spot.SpotImages.some(image => image.preview === true) ? (
+        {previewImage ? (
               <img
                 id="main-img"
-                src={spot.SpotImages.find(image => image.preview === true).url}
+                src={previewImage.url}
                 alt="Preview Pic of Spot"
               />
             ) : (
               <img
                 id="main-img"
-                src="https://cdn.discordapp.com/attachments/320286625521336341/1125935356320161852/no_photo.png"
+                src={NO_PHOTO}
                 alt="No Preview Available"
               />
             )}
           </div>
-          <div className="other-images">
-        </div>
         <div className="other-images">
-        {spot.SpotImages[1] ? (<img className="other-image" src={spot.SpotImages[1].url} alt="Pic of Spot"/>) : (<img className="other-image" src="https://cdn.discordapp.com/attachments/320286625521336341/1125935356320161852/no_photo.png" alt="Pic of Spot"/>)}
-        {spot.SpotImages[2] ? (<img className="other-image" src={spot.SpotImages[2].url} alt="Pic of Spot"/>) : (<img className="other-image" src="https://cdn.discordapp.com/attachments/320286625521336341/1125935356320161852/no_photo.png" alt="Pic of Spot"/>)}
-        {spot.SpotImages[3] ? (<img className="other-image" src={spot.SpotImages[3].url} alt="Pic of Spot"/>) : (<img className="other-image" src="https://cdn.discordapp.com/attachments/320286625521336341/1125935356320161852/no_photo.png" alt="Pic of Spot"/>)}
-        {spot.SpotImages[4] ? (<img className="other-image" src={spot.SpotImages[4].url} alt="Pic of Spot"/>) : (<img className="other-image" src="https://cdn.discordapp.com/attachments/320286625521336341/1125935356320161852/no_photo.png" alt="Pic of Spot"/>)}
+        {[0, 1, 2, 3].map((index) => (
+          <img
+            key={otherImages[index] ? `spot-image-${otherImages[index].id}` : `placeholder-${index}`}
+            className="other-image"
+            src={otherImages[index] ? otherImages[index].url : NO_PHOTO}
+            alt="Pic of Spot"
+          />
+        ))}
         </div>
       </div>
       <div className="belowImages">

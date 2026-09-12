@@ -53,43 +53,45 @@
 }
 
 .preview-image {
-    max-width: 500px;
+    width: 500px;
+    height: 500px;
+    flex: 0 0 500px;
     display: flex;
 }
 
 .preview-image img {
     width: 100%;
-    height: auto;
+    height: 100%;
     object-fit: cover;
-}
-
-.other-image {
-    width: 44%;
-    object-fit: cover;
-
 }
 
 .images-container {
     margin-bottom: 25px;
     display: flex;
-    max-width: 1000px;
+    gap: 6px;
+    width: 1000px;
     margin-left: 30px;
 }
 
+/* 2 x 2 grid of equal cells whose total height matches the preview image */
 .other-images {
-    display: flex;
-    max-width: 500px;
-    flex-flow: row wrap;
+    display: grid;
+    /* minmax(0, 1fr) stops tall photos from stretching the rows past 500px */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    width: 494px;
+    height: 500px;
+    overflow: hidden;
 }
 
 .other-image {
-    margin: 2px 2px 2px 3px;
-    flex-basis: calc(50%-20px)
-}
-
-.other-image img {
     width: 100%;
-    height: auto;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    object-fit: cover;
+    display: block;
 }
 
 .location {
@@ -115,6 +117,7 @@
 #main-img {
     width: 500px;
     height: 500px;
+    object-fit: cover;
     /* border-top-left-radius: 20px;
     border-bottom-left-radius: 20px; */
 }

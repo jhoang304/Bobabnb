@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-80 0 300 300">
+  <title>bobabnb</title>
+  <rect x="25" y="3" width="32" height="92" rx="2" fill="#E8391D"/>
+  <rect x="29" y="7" width="24" height="88" fill="#F0F0F0"/>
+  <path fill="#E8391D" d="M11 60H129a6 6 0 0 1 6 6V273H5V66a6 6 0 0 1 6-6Z"/>
+  <rect x="3" y="90" width="134" height="24" fill="#F0F0F0"/>
+  <g fill="#232323">
+    <circle cx="40" cy="217" r="19"/>
+    <circle cx="102" cy="210" r="19"/>
+    <circle cx="86" cy="229" r="19"/>
+    <circle cx="58" cy="253" r="19"/>
+    <circle cx="110" cy="253" r="19"/>
+  </g>
+  <path fill="#232323" d="M5 273H135v11a6 6 0 0 1-6 6H11a6 6 0 0 1-6-6Z"/>
+</svg>

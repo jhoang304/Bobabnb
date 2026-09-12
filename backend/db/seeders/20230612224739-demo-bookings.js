@@ -40,24 +40,57 @@ module.exports = {
         userId: 3,
         startDate: new Date('2023-05-06'),
         endDate: new Date('2023-05-12')
+      },
+      {
+        spotId: 9,
+        userId: 1,
+        startDate: new Date('2026-10-03'),
+        endDate: new Date('2026-10-07')
+      },
+      {
+        spotId: 12,
+        userId: 1,
+        startDate: new Date('2026-11-20'),
+        endDate: new Date('2026-11-24')
+      },
+      {
+        spotId: 10,
+        userId: 4,
+        startDate: new Date('2026-10-15'),
+        endDate: new Date('2026-10-18')
+      },
+      {
+        spotId: 11,
+        userId: 5,
+        startDate: new Date('2026-12-01'),
+        endDate: new Date('2026-12-05')
+      },
+      {
+        spotId: 13,
+        userId: 6,
+        startDate: new Date('2026-09-25'),
+        endDate: new Date('2026-09-28')
+      },
+      {
+        spotId: 15,
+        userId: 7,
+        startDate: new Date('2027-01-10'),
+        endDate: new Date('2027-01-14')
+      },
+      {
+        spotId: 16,
+        userId: 3,
+        startDate: new Date('2027-02-14'),
+        endDate: new Date('2027-02-16')
       }
     ], {});
-    /**
-     * Add seed commands here.
-     *
-     * Example:
-     * await queryInterface.bulkInsert('People', [{
-     *   name: 'John Doe',
-     *   isBetaMember: false
-     * }], {});
-    */
   },
 
   down: async (queryInterface, Sequelize) => {
     options.tableName = 'Bookings';
     const Op = Sequelize.Op;
     return queryInterface.bulkDelete(options, {
-      userId: { [Op.in]: [1, 2, 3] }
+      userId: { [Op.in]: [1, 2, 3, 4, 5, 6, 7] }
     }, {});
   }
 };
