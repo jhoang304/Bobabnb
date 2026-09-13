@@ -4,6 +4,21 @@ const { Op } = require('sequelize')
 const { requireAuth } = require('../../utils/auth');
 const { User, Spot, SpotImage, Review, ReviewImage, Booking } = require('../../db/models');
 
+const isValidImageUrl = (value) => {
+    if (!value) return false;
+
+    try {
+        const url = new URL(value);
+
+        return (
+            url.protocol === 'http:' ||
+            url.protocol === 'https:'
+        );
+    } catch {
+        return false;
+    }
+};
+
 //Get all Spots owned by Current User
 router.get('/current', requireAuth, async (req, res) => {
     try {
@@ -268,10 +283,17 @@ router.post('/:spotId/images', requireAuth, async (req, res) => {
         res.status(403)
         return res.json({ message: "Only the owner can add images to this spot" });
     };
-    if(!url) {
-        res.status(404)
-        return res.json({ message: "Image is required"})
-    };
+    if (!url) {
+        return res.status(400).json({
+            message: "Image is required"
+        });
+    }
+    
+    if (!isValidImageUrl(url)) {
+        return res.status(400).json({
+            message: "Invalid image URL"
+        });
+    }
 
     const newImg = await SpotImage.create({
         spotId,

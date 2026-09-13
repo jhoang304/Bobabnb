@@ -4,6 +4,18 @@ import { useHistory } from 'react-router-dom'
 import { createSpotThunk } from '../../store/spot'
 import './NewSpot.css'
 
+const isValidImageUrl = (value) => {
+    if (!value) return false;
+  
+    try {
+      const url = new URL(value);
+  
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
+  };
+
 export default function CreateSpot() {
     const history = useHistory();
     const dispatch = useDispatch();
@@ -61,21 +73,25 @@ export default function CreateSpot() {
         if (!imagePreview) {
             errorsObject.imagePreview = "Preview image is required."
         }
-        if (imagePreview && !imagePreview.match(/(\.png|\.jpg|\.jpeg)\s*$/)) {
-            errorsObject.imagePreview = "Image URL must end in .png, .jpg, or .jpeg.";
+        if (imagePreview && !isValidImageUrl(imagePreview)) {
+        errorsObject.imagePreview = "Please enter a valid image URL.";
+         }
+
+        if (image1 && !isValidImageUrl(image1)) {
+          errorsObject.image1 = "Please enter a valid image URL.";
+          }
+
+        if (image2 && !isValidImageUrl(image2)) {
+        errorsObject.image2 = "Please enter a valid image URL.";
+         }
+      
+        if (image3 && !isValidImageUrl(image3)) {
+         errorsObject.image3 = "Please enter a valid image URL.";
         }
-        if (image1 && !image1.match(/(\.png|\.jpg|\.jpeg)\s*$/)) {
-            errorsObject.image1 = "Image URL must end in .png, .jpg, or .jpeg.";
-        }
-        if (image2 && !image2.match(/(\.png|\.jpg|\.jpeg)\s*$/)) {
-            errorsObject.image2 = "Image URL must end in .png, .jpg, or .jpeg.";
-        }
-        if (image3 && !image3.match(/(\.png|\.jpg|\.jpeg)\s*$/)) {
-            errorsObject.image3 = "Image URL must end in .png, .jpg, or .jpeg.";
-        }
-        if (image4 && !image4.match(/(\.png|\.jpg|\.jpeg)\s*$/)) {
-            errorsObject.image4 = "Image URL must end in .png, .jpg, or .jpeg.";
-        }
+
+        if (image4 && !isValidImageUrl(image4)) {
+         errorsObject.image4 = "Please enter a valid image URL.";
+          }
         setValidationErrors(errorsObject)
     }, [country, address, city, state, description, title, price, imagePreview, image1, image2, image3, image4])
 
