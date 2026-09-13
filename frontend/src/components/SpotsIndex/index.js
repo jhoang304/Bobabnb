@@ -16,8 +16,7 @@ export default function SpotsIndex() {
     <div className="spots-container">
       {spots &&
         spots.map((spot) => (
-          // <Link to={`/spots/${spot.id}`} key={`spot-${spot.id}`}>
-          <Link to={`/spots/${spot.id}`}>
+          <Link to={`/spots/${spot.id}`} key={`spot-${spot.id}`}>
             <div className="spot" title={spot.name}>
               <img src={spot.previewImage} alt="Spot Preview" />
               <div className="location-and-rating">
