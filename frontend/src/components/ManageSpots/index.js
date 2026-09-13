@@ -37,8 +37,8 @@ export default function ManageSpots() {
           <div id="spots-container">
             {spots &&
               spots.map((spot) => (
-                <div className="spot-container">
-                  <Link to={`/spots/${spot.id}`} key={`spot-${spot.id}`}>
+                <div className="spot-container" key={`spot-${spot.id}`}>
+                  <Link to={`/spots/${spot.id}`}>
                     <div className="spot">
                       <img src={spot.previewImage} alt="Spot Preview" />
                       {/* <h2>{spot.name}</h2>

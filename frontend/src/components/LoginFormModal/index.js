@@ -94,10 +94,12 @@ function LoginFormModal() {
   }, [credential, password])
 
 
-  const loginDemo = () => {
+  const loginDemo = (e) => {
+    e.preventDefault();
     dispatch(sessionActions.login({ credential: "Demo-lition", password: "password" }))
-    .then(closeModal)
-  }
+      .then(closeModal)
+      .catch(() => {});
+  };
 
 
   return (
@@ -128,7 +130,7 @@ function LoginFormModal() {
         </label>
         {errors.credential && <p>{errors.credential}</p>}
         <button className={disabled ? "submit-button-inactive" : "submit-button-login"} type="submit" disabled={disabled}>Log In</button>
-        <button className="demo-button" onClick={loginDemo}>DemoUser Login</button>
+        <button type="button" className="demo-button" onClick={loginDemo}>DemoUser Login</button>
       </form>
     </>
   );
