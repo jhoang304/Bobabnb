@@ -222,7 +222,8 @@ router.get('/', async (req, res) => {
         { model: Review },
         {
             model: SpotImage,
-            where: { preview: true }
+            where: { preview: true },
+            required: false
         }
         ],
         where: query,
@@ -235,7 +236,7 @@ router.get('/', async (req, res) => {
         spotData.avgRating = sum / spotData.Reviews.length || 0;
 
         const spotImage = spotData.SpotImages.find(image => image.url);
-        spotData.previewImage = spotImage ? spotImage.url : 'no image found';
+        spotData.previewImage = spotImage ? spotImage.url : null;
 
         delete spotData.Reviews;
         delete spotData.SpotImages;

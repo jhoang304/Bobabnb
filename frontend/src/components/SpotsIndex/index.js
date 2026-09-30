@@ -2,6 +2,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { allSpotsThunk } from "../../store/spot";
+import { NO_PHOTO } from "../../constants";
 import "./SpotsIndex.css";
 
 export default function SpotsIndex() {
@@ -19,7 +20,7 @@ export default function SpotsIndex() {
           // <Link to={`/spots/${spot.id}`} key={`spot-${spot.id}`}>
           <Link to={`/spots/${spot.id}`}>
             <div className="spot" title={spot.name}>
-              <img src={spot.previewImage} alt="Spot Preview" />
+              <img src={spot.previewImage || NO_PHOTO} alt="Spot Preview" />
               <div className="location-and-rating">
                 <p>
                   {spot.city}, {spot.state}
