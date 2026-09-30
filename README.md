@@ -140,6 +140,7 @@ The backend reads these from `backend/.env` in development and from the host's e
 | `backend/` | `npm start` | Runs `nodemon ./bin/www` in development, or `node ./bin/www` when `NODE_ENV=production` |
 | `backend/` | `npx dotenv sequelize <command>` | Runs a Sequelize CLI command (`db:migrate`, `db:seed:all`, `db:migrate:undo:all`, ...) with `.env` loaded |
 | `backend/` | `npm run build` | Creates the PostgreSQL schema named by `SCHEMA` if it doesn't exist (production only) |
+| `backend/` | `npm test` | Runs the backend unit tests (`*.test.js`) with Node's built-in test runner |
 | `frontend/` | `npm start` | Starts the React dev server |
 | `frontend/` | `npm run build` | Builds the React app into `frontend/build` |
 | root | `npm install` | Installs backend and frontend dependencies (used by the Render build) |
@@ -800,28 +801,26 @@ Returns `200` with the new booking (`id`, `spotId`, `userId`, `startDate`, `endD
 
 | Status | When | Body |
 | --- | --- | --- |
-| `400` | `endDate` is missing, or is on or before `startDate` | `"message": "Bad Request", "errors": { "endDate": "endDate cannot be on or before startDate" }` |
+| `400` | A date is missing, isn't a valid date, `startDate` is before today (UTC), or `endDate` is on or before `startDate` | `"message": "Bad Request"`, with `errors.startDate` set to one of `"startDate is required"`, `"startDate must be a valid date"` or `"startDate cannot be in the past"`, and `errors.endDate` set to one of `"endDate is required"`, `"endDate must be a valid date"` or `"endDate cannot be on or before startDate"` |
 | `403` | You own the spot | `{ "message": "Owner cannot book their own spot" }` |
 | `403` | The dates overlap an existing booking | `"message": "Sorry, this spot is already booked for the specified dates", "errors": { "startDate": "Start date conflicts with an existing booking", "endDate": "End date conflicts with an existing booking" }` |
 | `404` | No spot with that id | `{ "message": "Spot couldn't be found" }` |
 
-The overlap `errors` object only includes the dates that fall inside an existing booking. A new booking that completely surrounds an existing one isn't caught ([#8](https://github.com/jhoang304/Bobabnb/issues/8)).
+Both the start and end dates of a booking count as booked, so a new booking can't start on the day another one ends. When the dates overlap, `errors` has `startDate` if the new start falls inside an existing booking and `endDate` if the new end does. If the new dates surround an existing booking, both are set.
 
 #### Edit a booking
 
 `PUT /api/bookings/:bookingId` · Auth required · Booker only
 
-Takes the same body as [Create a booking](#create-a-booking) and returns `200` with the updated booking.
+Takes the same body as [Create a booking](#create-a-booking) and returns `200` with the updated booking. The booking's own current dates don't count as a conflict. A booking that has already started can keep its start date, for example to extend its end date, but a new start date can't be in the past.
 
 | Status | When | Body |
 | --- | --- | --- |
-| `400` | `endDate` is missing, or is on or before `startDate` | `"message": "Bad Request", "errors": { "endDate": "endDate cannot come before startDate" }` |
+| `400` | A date is missing or invalid | Same as [Create a booking](#create-a-booking) |
 | `403` | You didn't make the booking | `{ "message": "Only the user can edit their booking" }` |
 | `403` | The booking's end date has passed | `{ "message": "Past bookings can't be modified" }` |
-| `403` | The new dates overlap a booking | Same as [Create a booking](#create-a-booking) |
+| `403` | The new dates overlap another booking | Same as [Create a booking](#create-a-booking) |
 | `404` | No booking with that id | `{ "message": "Booking couldn't be found" }` |
-
-The overlap check includes the booking being edited, so new dates that overlap its current dates are rejected ([#8](https://github.com/jhoang304/Bobabnb/issues/8)).
 
 #### Delete a booking
 
