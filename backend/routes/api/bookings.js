@@ -1,7 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const { Op } = require('sequelize');
 
 const { requireAuth } = require('../../utils/auth');
+const { parseDate, validateBookingDates, findBookingConflicts } = require('../../utils/bookings');
 const { User, Spot, SpotImage, Review, ReviewImage, Booking } = require('../../db/models');
 
 // Get all of the Current User's Bookings
@@ -55,13 +57,15 @@ router.put('/:bookingId', requireAuth, async (req, res) => {
         });
     };
 
-    if(!endDate || new Date(endDate) <= new Date(startDate)) {
+    // A stay that has already started can keep its start date, e.g. to extend the end date.
+    const newStart = parseDate(startDate);
+    const startUnchanged = !!newStart && newStart.getTime() === new Date(booking.startDate).getTime();
+    const dateErrors = validateBookingDates({ startDate, endDate }, { allowPastStart: startUnchanged });
+    if (Object.keys(dateErrors).length) {
         res.status(400);
         return res.json({
             message: "Bad Request",
-            errors: {
-              "endDate": "endDate cannot come before startDate"
-            }
+            errors: dateErrors
         });
     };
 
@@ -73,43 +77,19 @@ router.put('/:bookingId', requireAuth, async (req, res) => {
       });
     }
 
-    const currentBookings = await Booking.findAll({
+    const otherBookings = await Booking.findAll({
         where: {
-            spotId: booking.spotId
+            spotId: booking.spotId,
+            id: { [Op.ne]: booking.id }
         }
     });
 
-    const startDateTime = new Date(startDate).getTime();
-    const endDateTime = new Date(endDate).getTime();
-
-    const conflictingBooking = currentBookings.find(booking => {
-        const bookingStartDate = new Date(booking.startDate).getTime();
-        const bookingEndDate = new Date(booking.endDate).getTime();
-
-        if (bookingStartDate <= startDateTime && bookingEndDate >= startDateTime) {
-            return true;
-        }
-
-        if (bookingStartDate <= endDateTime && bookingEndDate >= endDateTime) {
-            return true;
-        }
-
-        return false;
-    });
-
-    if (conflictingBooking) {
-        const errors = {};
-        if (conflictingBooking.startDate <= startDateTime) {
-            errors.startDate = "Start date conflicts with an existing booking";
-        }
-        if (conflictingBooking.endDate >= endDateTime) {
-            errors.endDate = "End date conflicts with an existing booking";
-        }
-
+    const conflicts = findBookingConflicts(otherBookings, startDate, endDate);
+    if (Object.keys(conflicts).length) {
         res.status(403);
         return res.json({
             message: "Sorry, this spot is already booked for the specified dates",
-            errors: errors
+            errors: conflicts
         });
     }
 

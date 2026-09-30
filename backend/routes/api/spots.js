@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { Op } = require('sequelize')
 const { requireAuth } = require('../../utils/auth');
+const { validateBookingDates, findBookingConflicts } = require('../../utils/bookings');
 const { User, Spot, SpotImage, Review, ReviewImage, Booking } = require('../../db/models');
 
 //Get all Spots owned by Current User
@@ -353,13 +354,12 @@ router.post('/:spotId/bookings', requireAuth, async (req, res) => {
         return res.json({ message: "Owner cannot book their own spot" });
     }
 
-    if (!endDate || new Date(endDate) <= new Date(startDate)) {
+    const dateErrors = validateBookingDates({ startDate, endDate });
+    if (Object.keys(dateErrors).length) {
         res.status(400);
         return res.json({
             message: "Bad Request",
-            errors: {
-            endDate: "endDate cannot be on or before startDate"
-            }
+            errors: dateErrors
         });
     }
 
@@ -369,37 +369,12 @@ router.post('/:spotId/bookings', requireAuth, async (req, res) => {
         }
     });
 
-    const startDateTime = new Date(startDate).getTime();
-    const endDateTime = new Date(endDate).getTime();
-
-    const conflictingBooking = currentBookings.find(booking => {
-        const bookingStartDate = new Date(booking.startDate).getTime();
-        const bookingEndDate = new Date(booking.endDate).getTime();
-
-        if (bookingStartDate <= startDateTime && bookingEndDate >= startDateTime) {
-            return true;
-        }
-
-        if (bookingStartDate <= endDateTime && bookingEndDate >= endDateTime) {
-            return true;
-        }
-
-        return false;
-    });
-
-    if (conflictingBooking) {
-        const errors = {};
-        if (conflictingBooking.startDate <= startDateTime) {
-            errors.startDate = "Start date conflicts with an existing booking";
-        }
-        if (conflictingBooking.endDate >= endDateTime) {
-            errors.endDate = "End date conflicts with an existing booking";
-        }
-
+    const conflicts = findBookingConflicts(currentBookings, startDate, endDate);
+    if (Object.keys(conflicts).length) {
         res.status(403);
         return res.json({
             message: "Sorry, this spot is already booked for the specified dates",
-            errors: errors
+            errors: conflicts
         });
     }
 
