@@ -466,10 +466,11 @@ Returns `200`:
 | --- | --- | --- |
 | `400` | A query parameter is invalid | `"message": "Validation error", "errors": { "page": "Page must be greater than or equal to 1", "size": "Size must be greater than or equal to 1", "minLat": "Minimum latitude is invalid", "maxLat": "Maximum latitude is invalid", "minLng": "Minimum longitude is invalid", "maxLng": "Maximum longitude is invalid", "minPrice": "Minimum price must be a decimal greater than or equal to 0", "maxPrice": "Maximum price must be a decimal greater than or equal to 0" }` |
 
+`previewImage` is `null` for a spot with no image marked as its preview.
+
 Current limitations:
 
 - `avgRating` is `0` for a spot with no reviews ([#20](https://github.com/jhoang304/Bobabnb/issues/20)).
-- Spots without a preview image are left out of the results ([#7](https://github.com/jhoang304/Bobabnb/issues/7)).
 - Pagination only applies when `page` is 10 or less and `size` is 20 or less. Outside that range, every matching spot is returned ([#15](https://github.com/jhoang304/Bobabnb/issues/15)).
 - `page` and `size` are echoed back as sent, so they are strings when passed in the query string ([#15](https://github.com/jhoang304/Bobabnb/issues/15)).
 

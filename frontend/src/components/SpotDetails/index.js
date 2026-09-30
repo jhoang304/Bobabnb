@@ -7,8 +7,7 @@ import "./SpotDetails.css";
 import OpenModalButton from "../OpenModalButton";
 import CreateReviewModal from "../CreateReviewModal";
 import DeleteReviewModal from "../DeleteReviewModal";
-
-const NO_PHOTO = "https://placehold.co/600x400/e8e8e8/777777.png?text=No+Photo+Available";
+import { NO_PHOTO } from "../../constants";
 
 export default function SpotDetail() {
   const { spotId } = useParams();
