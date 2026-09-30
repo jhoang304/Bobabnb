@@ -1,1622 +1,853 @@
 # BobaBnB
-https://joshua-auth-me.onrender.com
 
-* BobaBnB is a web application based on the idea of AirBnB
+BobaBnB is a full-stack, Airbnb-style web app for boba shops. You can browse "spots", look at their photos and reviews, list your own spot, and review other people's.
 
-## Introduction
+**Live site:** https://joshua-auth-me.onrender.com
 
-BobaBnb is a platform where users can create spots and leave reviews for them. The full-stack application is built with React, Redux, Express, Sequelize, and PostgresSQL. Some functionalities include:
+To look around without signing up, open the profile menu in the top right, choose **Log In**, then click **DemoUser Login**. The site runs on Render's free tier, so the first request after it has been idle can take up to a minute.
 
-* User authentication and authorization
-* Creating, reading, editing, deleting spots
-* Creating, reading, editing, deleting reviews
+## Contents
 
-Future Functionalities:
-* Search for spots
-* Creating, reading, editing, deleting bookings
-* Profile page  
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Getting started](#getting-started)
+- [Environment variables](#environment-variables)
+- [Scripts](#scripts)
+- [Deployment](#deployment)
+- [Database schema](#database-schema)
+- [Project structure](#project-structure)
+- [API reference](#api-reference)
+- [Roadmap](#roadmap)
+- [Author](#author)
 
+## Features
 
-## Database Schema Design
+In the app today:
 
-<!--!!START SILENT -->
-![airbnb-database-schema]
+- **Accounts:** sign up, log in with a username or email, log out, or use the one-click demo login.
+- **Browse spots:** the home page shows every spot's preview image, city and state, average rating ("New" if it has no reviews) and nightly price.
+- **Spot details:** a photo gallery (a preview image plus up to four more), the host's name, the description, a rating summary and all reviews.
+- **Host a spot:** create a spot with a preview image and up to four extra photos, then update or delete it from **Manage Spots**.
+- **Reviews:** leave a 1–5 star review on any spot you don't own (one per spot), and delete your own reviews.
 
-[airbnb-database-schema]: https://appacademy-open-assets.s3.us-west-1.amazonaws.com/Modular-Curriculum/content/week-12/airbnb-db-schema.png
-[airbnb-db-diagram-info]: https://appacademy-open-assets.s3.us-west-1.amazonaws.com/Modular-Curriculum/content/week-12/airbnb-db-diagram-info.txt
-<!--!!END -->
-<!--!!ADD -->
-<!-- `<insert database schema design here>` -->
-<!--!!END_ADD -->
+Supported by the API but not in the UI yet:
 
-## API Documentation
+- Bookings: create, list, change dates and cancel. The **Reserve Now** button on a spot's page is a placeholder for now.
+- Adding and removing spot images after a spot is created, and review images.
+- Filtering spots by price and location, and paginating results.
+- Editing a review.
 
-## USER AUTHENTICATION/AUTHORIZATION
+Frontend routes:
 
-### All endpoints that require authentication
+| Path | Page |
+| --- | --- |
+| `/` | All spots |
+| `/spots/:spotId` | Spot details and reviews |
+| `/spots/new` | Create a spot |
+| `/spots/current` | Manage your spots |
+| `/spots/:spotId/edit` | Update a spot |
 
-All endpoints that require a current user to be logged in.
+## Tech stack
 
-* Request: endpoints that require authentication
-* Error Response: Require authentication
-  * Status Code: 401
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+| Layer | Tools |
+| --- | --- |
+| Frontend | React 18, Redux 4 with redux-thunk, React Router 5, Create React App (react-scripts 5) |
+| Backend | Node.js, Express 4, Sequelize 6 and sequelize-cli, express-validator |
+| Auth and security | JWT in an httpOnly cookie (jsonwebtoken), bcryptjs, csurf, helmet |
+| Database | SQLite in development, PostgreSQL in production |
+| Hosting | Render |
 
-    ```json
-    {
-      "message": "Authentication required"
+## Getting started
+
+### Prerequisites
+
+- Node.js 18 and npm
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/jhoang304/Bobabnb.git
+cd Bobabnb
+npm install --prefix backend
+npm install --prefix frontend
+```
+
+### 2. Configure the backend
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+The defaults in [`backend/.env.example`](backend/.env.example) work for local development as they are. See [Environment variables](#environment-variables) for what each value does.
+
+### 3. Create and seed the database
+
+```bash
+cd backend
+npx dotenv sequelize db:migrate
+npx dotenv sequelize db:seed:all
+```
+
+This creates a SQLite file at `backend/db/dev.db` with 7 users, 16 spots, and sample images, reviews and bookings. `npx dotenv` loads `backend/.env` before running the Sequelize CLI.
+
+To start over with fresh seed data, delete `backend/db/dev.db` and run both commands again.
+
+### 4. Start the servers
+
+Use two terminals:
+
+```bash
+# Terminal 1: API on http://localhost:8000, restarts on changes (nodemon)
+cd backend
+npm start
+```
+
+```bash
+# Terminal 2: React dev server on http://localhost:3000
+cd frontend
+npm start
+```
+
+Open http://localhost:3000. The React dev server proxies `/api` requests to `http://localhost:8000` (the `proxy` field in `frontend/package.json`), so keep `PORT=8000` or update the proxy to match.
+
+### Demo accounts
+
+| Username | Email | Password |
+| --- | --- | --- |
+| `Demo-lition` | `demo@user.io` | `password` |
+| `FakeUser1` | `user1@user.io` | `password2` |
+
+More seeded users are in [`backend/db/seeders/20230608202943-demo-user.js`](backend/db/seeders/20230608202943-demo-user.js).
+
+## Environment variables
+
+The backend reads these from `backend/.env` in development and from the host's environment in production.
+
+| Variable | Needed in | Purpose | Example |
+| --- | --- | --- | --- |
+| `PORT` | both | Port the Express server listens on. Defaults to `8000`. | `8000` |
+| `DB_FILE` | development | Path to the SQLite database, relative to `backend/`. | `db/dev.db` |
+| `JWT_SECRET` | both | Secret used to sign session tokens. Use a long random string in production. | `change-me` |
+| `JWT_EXPIRES_IN` | both | Session length in seconds, also used as the cookie's max age. Logging in fails if it is missing. | `604800` (one week) |
+| `SCHEMA` | production | PostgreSQL schema that holds the app's tables. | `bobabnb_schema` |
+| `DATABASE_URL` | production | PostgreSQL connection string. | |
+| `NODE_ENV` | production | Set to `production` to switch to PostgreSQL, serve the React build and use secure cookies. Leave it unset locally. | `production` |
+
+## Scripts
+
+| Where | Command | What it does |
+| --- | --- | --- |
+| `backend/` | `npm start` | Runs `nodemon ./bin/www` in development, or `node ./bin/www` when `NODE_ENV=production` |
+| `backend/` | `npx dotenv sequelize <command>` | Runs a Sequelize CLI command (`db:migrate`, `db:seed:all`, `db:migrate:undo:all`, ...) with `.env` loaded |
+| `backend/` | `npm run build` | Creates the PostgreSQL schema named by `SCHEMA` if it doesn't exist (production only) |
+| `frontend/` | `npm start` | Starts the React dev server |
+| `frontend/` | `npm run build` | Builds the React app into `frontend/build` |
+| root | `npm install` | Installs backend and frontend dependencies (used by the Render build) |
+| root | `npm run render-postbuild` | Builds the React app |
+| root | `npm run build` | Runs the backend `build` script |
+| root | `npm start` | Starts the backend. In production it also serves the React build. |
+
+The root `dev:backend` and `dev:frontend` scripts don't work yet ([#18](https://github.com/jhoang304/Bobabnb/issues/18)). Run `npm start` inside `backend/` and `frontend/` instead.
+
+## Deployment
+
+The live site is a single Render web service. The Express server serves both the API and the built React app. Deploy settings live in the Render dashboard. There is no `render.yaml` in the repo.
+
+- **Build command:**
+
+  ```bash
+  npm install && npm run render-postbuild && npm run build && npm run sequelize --prefix backend db:migrate && npm run sequelize --prefix backend db:seed:all
+  ```
+
+- **Start command:** `npm start`
+- **Environment:** `NODE_ENV=production`, `DATABASE_URL`, `SCHEMA`, `JWT_SECRET`, `JWT_EXPIRES_IN`
+
+Sequelize records which migrations and seeders have run (in the `SequelizeMeta` and `SequelizeData` tables), so redeploying keeps existing data and doesn't re-seed. Don't add `db:seed:undo:all` or `db:migrate:undo:all` to the build command, because they erase every user-created spot and review on each deploy.
+
+To reset production to fresh seed data, run the following from the Render shell. The seeders refer to rows by fixed ids, so the tables have to be dropped and recreated, not just emptied. This deletes all data.
+
+```bash
+npm run sequelize --prefix backend db:seed:undo:all
+npm run sequelize --prefix backend db:migrate:undo:all
+npm run sequelize --prefix backend db:migrate
+npm run sequelize --prefix backend db:seed:all
+```
+
+## Database schema
+
+```mermaid
+erDiagram
+    Users ||--o{ Spots : owns
+    Users ||--o{ Reviews : writes
+    Users ||--o{ Bookings : makes
+    Spots ||--o{ SpotImages : has
+    Spots ||--o{ Reviews : receives
+    Spots ||--o{ Bookings : "booked through"
+    Reviews ||--o{ ReviewImages : has
+
+    Users {
+        integer id PK
+        string username UK "4 to 30 characters"
+        string email UK "up to 256 characters"
+        binary hashedPassword "bcrypt hash"
+        string firstName
+        string lastName
     }
-    ```
-
-### All endpoints that require proper authorization
-
-All endpoints that require authentication and the current user does not have the
-correct role(s) or permission(s).
-
-* Request: endpoints that require proper authorization
-* Error Response: Require proper authorization
-  * Status Code: 403
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Forbidden"
+    Spots {
+        integer id PK
+        integer ownerId FK "Users.id"
+        text address
+        string city
+        string state
+        string country
+        decimal lat "nullable"
+        decimal lng "nullable"
+        string name
+        text description
+        decimal price
     }
-    ```
-
-### Get the Current User
-
-Returns the information about the current user that is logged in.
-
-* Require Authentication: true
-* Request
-  <!--!!START SILENT -->
-  * Method: GET
-  * URL: /api/session
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Body: none
-
-* Successful Response when there is a logged in user
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "user": {
-        "id": 1,
-        "firstName": "John",
-        "lastName": "Smith",
-        "email": "john.smith@gmail.com",
-        "username": "JohnSmith"
-      }
+    SpotImages {
+        integer id PK
+        integer spotId FK "Spots.id"
+        text url
+        boolean preview
     }
-    ```
-
-* Successful Response when there is no logged in user
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "user": null
+    Reviews {
+        integer id PK
+        integer spotId FK "Spots.id"
+        integer userId FK "Users.id"
+        string review
+        integer stars "1 to 5"
     }
-    ```
-
-### Log In a User
-
-Logs in a current user with valid credentials and returns the current user's
-information.
-
-* Require Authentication: false
-* Request
-  <!--!!START SILENT -->
-  * Method: POST
-  * URL: /api/session
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "credential": "john.smith@gmail.com",
-      "password": "secret password"
+    ReviewImages {
+        integer id PK
+        integer reviewId FK "Reviews.id"
+        string url
     }
-    ```
-
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "user": {
-        "id": 1,
-        "firstName": "John",
-        "lastName": "Smith",
-        "email": "john.smith@gmail.com",
-        "username": "JohnSmith"
-      }
+    Bookings {
+        integer id PK
+        integer spotId FK "Spots.id"
+        integer userId FK "Users.id"
+        datetime startDate
+        datetime endDate
     }
-    ```
+```
 
-* Error Response: Invalid credentials
-  * Status Code: 401
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+Every table also has `createdAt` and `updatedAt` timestamps. Only `SpotImages.spotId` and `Reviews.spotId` are foreign keys in the database itself (with `ON DELETE CASCADE`). The other relationships exist only as Sequelize associations ([#21](https://github.com/jhoang304/Bobabnb/issues/21)). The migrations are in [`backend/db/migrations`](backend/db/migrations).
 
-    ```json
-    {
-      "message": "Invalid credentials"
-    }
-    ```
+## Project structure
 
-* Error response: Body validation errors
-  * Status Code: 400
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+```
+Bobabnb/
+├── package.json          # root scripts used by Render
+├── backend/
+│   ├── app.js            # Express app: middleware, CSRF, error handlers
+│   ├── bin/www           # entry point: loads .env, checks the DB connection, starts the server
+│   ├── config/           # environment config and Sequelize connection settings
+│   ├── db/
+│   │   ├── migrations/
+│   │   ├── models/
+│   │   └── seeders/
+│   ├── routes/
+│   │   ├── index.js      # mounts /api, CSRF restore route, serves the React build in production
+│   │   └── api/          # session, users, spots, reviews, bookings, spot-images, review-images
+│   └── utils/            # JWT cookie auth and validation helpers
+└── frontend/
+    ├── public/
+    └── src/
+        ├── App.js        # routes
+        ├── components/   # one folder per page or modal
+        ├── context/      # modal provider
+        └── store/        # Redux slices (session, spot, review) and csrfFetch
+```
 
-    ```json
-    {
-      "message": "Bad Request", // (or "Validation error" if generated by Sequelize),
-      "errors": {
-        "credential": "Email or username is required",
-        "password": "Password is required"
-      }
-    }
-    ```
+## API reference
 
-### Sign Up a User
+All endpoints are under `/api`, and requests and responses are JSON.
 
-Creates a new user, logs them in as the current user, and returns the current
-user's information.
+### Authentication and CSRF
 
-* Require Authentication: false
-* Request
-  <!--!!START SILENT -->
-  * Method: POST
-  * URL: /api/users
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+Logging in or signing up sets an httpOnly `token` cookie that holds a JWT. The cookie lasts `JWT_EXPIRES_IN` seconds, and the server reads it on every request.
 
-    ```json
-    {
-      "firstName": "John",
-      "lastName": "Smith",
-      "email": "john.smith@gmail.com",
-      "username": "JohnSmith",
-      "password": "secret password"
-    }
-    ```
+Every request that isn't a `GET` also needs a CSRF token. Send the value of the `XSRF-TOKEN` cookie back in an `XSRF-Token` header. In development, call `GET /api/csrf/restore` to get the cookie. In production, the server sets it when it serves the page. In the frontend, `csrfFetch` in [`frontend/src/store/csrf.js`](frontend/src/store/csrf.js) handles this.
 
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+Example against the local server:
 
-    ```json
-    {
-      "user": {
-        "id": 1,
-        "firstName": "John",
-        "lastName": "Smith",
-        "email": "john.smith@gmail.com",
-        "username": "JohnSmith"
-      }
-    }
-    ```
+```bash
+# Get the CSRF cookies
+curl -c cookies.txt http://localhost:8000/api/csrf/restore
 
-* Error response: User already exists with the specified email
-  * Status Code: 500
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+# Log in as the demo user, using the XSRF-TOKEN value from cookies.txt
+curl -b cookies.txt -c cookies.txt -X POST http://localhost:8000/api/session \
+  -H "Content-Type: application/json" \
+  -H "XSRF-Token: <XSRF-TOKEN value>" \
+  -d '{"credential": "Demo-lition", "password": "password"}'
+```
 
-    ```json
-    {
-      "message": "User already exists",
-      "errors": {
-        "email": "User with that email already exists"
-      }
-    }
-    ```
+### Errors
 
-* Error response: User already exists with the specified username
-  * Status Code: 500
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+Errors come in two shapes.
 
-    ```json
-    {
-      "message": "User already exists",
-      "errors": {
-        "username": "User with that username already exists"
-      }
-    }
-    ```
+Errors raised by middleware (authentication, login and signup validation, database validation, unknown routes) include a `title` and a `stack`. `stack` is `null` in production.
 
-* Error response: Body validation errors
-  * Status Code: 400
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+```json
+{
+  "title": "Authentication required",
+  "message": "Authentication required",
+  "errors": { "message": "Authentication required" },
+  "stack": "Error: Authentication required ..."
+}
+```
 
-    ```json
-    {
-      "message": "Bad Request", // (or "Validation error" if generated by Sequelize),
-      "errors": {
-        "email": "Invalid email",
-        "username": "Username is required",
-        "firstName": "First Name is required",
-        "lastName": "Last Name is required"
-      }
-    }
-    ```
+Errors returned by route handlers only have a `message`, plus an `errors` object keyed by field when validation fails:
 
-## SPOTS
+```json
+{ "message": "Spot couldn't be found" }
+```
 
-### Get all Spots
+Every endpoint marked as requiring auth returns the `401` above when you're logged out. Endpoints that need you to own the resource return `403` with a message specific to that endpoint.
 
-Returns all the spots.
+### Data types
 
-* Require Authentication: false
-* Request
-  <!--!!START SILENT -->
-  * Method: GET
-  * URL: /api/spots
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Body: none
+- Timestamps and booking dates are ISO 8601 strings, for example `"2030-01-01T00:00:00.000Z"`.
+- `lat`, `lng` and `price` are `DECIMAL` columns. SQLite (local) returns them as numbers, and PostgreSQL (production) returns them as strings, for example `"price": "67"`.
 
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+### Endpoints
 
-    ```json
-    {
-      "Spots": [
-        {
-          "id": 1,
-          "ownerId": 1,
-          "address": "123 Disney Lane",
-          "city": "San Francisco",
-          "state": "California",
-          "country": "United States of America",
-          "lat": 37.7645358,
-          "lng": -122.4730327,
-          "name": "App Academy",
-          "description": "Place where web developers are created",
-          "price": 123,
-          "createdAt": "2021-11-19 20:39:36",
-          "updatedAt": "2021-11-19 20:39:36",
-          "avgRating": 4.5,
-          "previewImage": "image url"
-        }
-      ]
-    }
-    ```
+| Method | Path | Auth | Description |
+| --- | --- | --- | --- |
+| `GET` | `/api/session` | | [Get the current user](#get-the-current-user) |
+| `POST` | `/api/session` | | [Log in](#log-in) |
+| `DELETE` | `/api/session` | | [Log out](#log-out) |
+| `POST` | `/api/users` | | [Sign up](#sign-up) |
+| `GET` | `/api/csrf/restore` | | [Get a CSRF token](#get-a-csrf-token) (development only) |
+| `GET` | `/api/spots` | | [Get all spots](#get-all-spots) |
+| `GET` | `/api/spots/current` | Yes | [Get your spots](#get-your-spots) |
+| `GET` | `/api/spots/:spotId` | | [Get spot details](#get-spot-details) |
+| `POST` | `/api/spots` | Yes | [Create a spot](#create-a-spot) |
+| `PUT` | `/api/spots/:spotId` | Owner | [Edit a spot](#edit-a-spot) |
+| `DELETE` | `/api/spots/:spotId` | Owner | [Delete a spot](#delete-a-spot) |
+| `POST` | `/api/spots/:spotId/images` | Owner | [Add an image to a spot](#add-an-image-to-a-spot) |
+| `DELETE` | `/api/spot-images/:imageId` | Owner | [Delete a spot image](#delete-a-spot-image) |
+| `GET` | `/api/spots/:spotId/reviews` | | [Get reviews for a spot](#get-reviews-for-a-spot) |
+| `GET` | `/api/reviews/current` | Yes | [Get your reviews](#get-your-reviews) |
+| `POST` | `/api/spots/:spotId/reviews` | Yes | [Create a review](#create-a-review) |
+| `PUT` | `/api/reviews/:reviewId` | Author | [Edit a review](#edit-a-review) |
+| `DELETE` | `/api/reviews/:reviewId` | Author | [Delete a review](#delete-a-review) |
+| `POST` | `/api/reviews/:reviewId/images` | Author | [Add an image to a review](#add-an-image-to-a-review) |
+| `DELETE` | `/api/review-images/:imageId` | Author | [Delete a review image](#delete-a-review-image) |
+| `GET` | `/api/bookings/current` | Yes | [Get your bookings](#get-your-bookings) |
+| `GET` | `/api/spots/:spotId/bookings` | Yes | [Get bookings for a spot](#get-bookings-for-a-spot) |
+| `POST` | `/api/spots/:spotId/bookings` | Yes, not the owner | [Create a booking](#create-a-booking) |
+| `PUT` | `/api/bookings/:bookingId` | Booker | [Edit a booking](#edit-a-booking) |
+| `DELETE` | `/api/bookings/:bookingId` | Booker or host | [Delete a booking](#delete-a-booking) |
 
-### Get all Spots owned by the Current User
+### Session and users
 
-Returns all the spots owned (created) by the current user.
+#### Get the current user
 
-* Require Authentication: true
-* Request
-  <!--!!START SILENT -->
-  * Method: GET
-  * URL: /api/spots/current
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Body: none
+`GET /api/session`
 
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+Returns `200` with the logged-in user, or `{ "user": null }` if nobody is logged in.
 
-    ```json
-    {
-      "Spots": [
-        {
-          "id": 1,
-          "ownerId": 1,
-          "address": "123 Disney Lane",
-          "city": "San Francisco",
-          "state": "California",
-          "country": "United States of America",
-          "lat": 37.7645358,
-          "lng": -122.4730327,
-          "name": "App Academy",
-          "description": "Place where web developers are created",
-          "price": 123,
-          "createdAt": "2021-11-19 20:39:36",
-          "updatedAt": "2021-11-19 20:39:36",
-          "avgRating": 4.5,
-          "previewImage": "image url"
-        }
-      ]
-    }
-    ```
+```json
+{
+  "user": {
+    "id": 1,
+    "firstName": "Harper",
+    "lastName": "Mitchell",
+    "email": "demo@user.io",
+    "username": "Demo-lition"
+  }
+}
+```
 
-### Get details of a Spot from an id
+#### Log in
 
-Returns the details of a spot specified by its id.
+`POST /api/session`
 
-* Require Authentication: false
-* Request
-  <!--!!START SILENT -->
-  * Method: GET
-  * URL: /api/spots/:spotId
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Body: none
+`credential` can be a username or an email.
 
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+```json
+{
+  "credential": "Demo-lition",
+  "password": "password"
+}
+```
 
-    ```json
+Returns `200` with `{ "user": { ... } }` in the same shape as [Get the current user](#get-the-current-user), and sets the `token` cookie.
+
+| Status | When | Body |
+| --- | --- | --- |
+| `400` | `credential` or `password` is missing | `"errors": { "credential": "Please provide a valid email or username.", "password": "Please provide a password." }` |
+| `401` | Wrong username, email or password | `"errors": { "credential": "The provided credentials were invalid." }` |
+
+#### Log out
+
+`DELETE /api/session`
+
+Clears the `token` cookie and returns `200` with `{ "message": "success" }`.
+
+#### Sign up
+
+`POST /api/users`
+
+```json
+{
+  "firstName": "Harper",
+  "lastName": "Mitchell",
+  "email": "harper@example.com",
+  "username": "HarperM",
+  "password": "secret password"
+}
+```
+
+Returns `200` with `{ "user": { ... } }` and logs the new user in.
+
+| Status | When | Body |
+| --- | --- | --- |
+| `400` | Invalid email, username shorter than 4 characters or shaped like an email, or password shorter than 6 characters | `"errors": { "email": "Please provide a valid email.", "username": "Please provide a username with at least 4 characters.", "password": "Password must be 6 characters or more." }` |
+| `500` | Email or username is already taken | `"title": "Validation error", "errors": { "email": "email must be unique" }` |
+| `500` | `firstName` or `lastName` is missing | `"errors": { "firstName": "User.firstName cannot be null" }` |
+| `500` | `firstName` or `lastName` has anything other than letters, including spaces, hyphens and apostrophes | `"errors": { "firstName": "Validation isAlpha on firstName failed" }` |
+
+These `500` responses should be `4xx` errors ([#14](https://github.com/jhoang304/Bobabnb/issues/14)).
+
+#### Get a CSRF token
+
+`GET /api/csrf/restore`
+
+Development only. Sets the `XSRF-TOKEN` cookie and returns `201` with `{}`.
+
+### Spots
+
+#### Get all spots
+
+`GET /api/spots`
+
+Optional query parameters:
+
+| Parameter | Type | Default |
+| --- | --- | --- |
+| `page` | integer, 1 or more | `1` |
+| `size` | integer, 1 or more | `20` |
+| `minLat`, `maxLat`, `minLng`, `maxLng` | decimal | |
+| `minPrice`, `maxPrice` | decimal, 0 or more | |
+
+Returns `200`:
+
+```json
+{
+  "Spots": [
     {
       "id": 1,
       "ownerId": 1,
-      "address": "123 Disney Lane",
-      "city": "San Francisco",
-      "state": "California",
+      "address": "5315 Cypress Creek Pkwy C",
+      "city": "Houston",
+      "state": "Texas",
       "country": "United States of America",
-      "lat": 37.7645358,
-      "lng": -122.4730327,
-      "name": "App Academy",
-      "description": "Place where web developers are created",
-      "price": 123,
-      "createdAt": "2021-11-19 20:39:36",
-      "updatedAt": "2021-11-19 20:39:36" ,
-      "numReviews": 5,
-      "avgStarRating": 4.5,
-      "SpotImages": [
-        {
-          "id": 1,
-          "url": "image url",
-          "preview": true
-        },
-        {
-          "id": 2,
-          "url": "image url",
-          "preview": false
-        }
-      ],
-      "Owner": {
-        "id": 1,
-        "firstName": "John",
-        "lastName": "Smith"
-      }
+      "lat": 29.9548,
+      "lng": -95.434,
+      "name": "Teahouse",
+      "description": "Traditional tea flavors and recipes from a brand built over two decades.",
+      "price": 67,
+      "createdAt": "2026-09-12T21:18:45.563Z",
+      "updatedAt": "2026-09-12T21:18:45.563Z",
+      "avgRating": 4,
+      "previewImage": "https://images.unsplash.com/photo-1558857563-b371033873b8?w=1200&q=80"
     }
-    ```
+  ],
+  "page": 1,
+  "size": 20
+}
+```
 
-* Error response: Couldn't find a Spot with the specified id
-  * Status Code: 404
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+| Status | When | Body |
+| --- | --- | --- |
+| `400` | A query parameter is invalid | `"message": "Validation error", "errors": { "page": "Page must be greater than or equal to 1", "size": "Size must be greater than or equal to 1", "minLat": "Minimum latitude is invalid", "maxLat": "Maximum latitude is invalid", "minLng": "Minimum longitude is invalid", "maxLng": "Maximum longitude is invalid", "minPrice": "Minimum price must be a decimal greater than or equal to 0", "maxPrice": "Maximum price must be a decimal greater than or equal to 0" }` |
 
-    ```json
-    {
-      "message": "Spot couldn't be found"
-    }
-    ```
+Current limitations:
 
-### Create a Spot
+- `avgRating` is `0` for a spot with no reviews ([#20](https://github.com/jhoang304/Bobabnb/issues/20)).
+- Spots without a preview image are left out of the results ([#7](https://github.com/jhoang304/Bobabnb/issues/7)).
+- Pagination only applies when `page` is 10 or less and `size` is 20 or less. Outside that range, every matching spot is returned ([#15](https://github.com/jhoang304/Bobabnb/issues/15)).
+- `page` and `size` are echoed back as sent, so they are strings when passed in the query string ([#15](https://github.com/jhoang304/Bobabnb/issues/15)).
 
-Creates and returns a new spot.
+#### Get your spots
 
-* Require Authentication: true
-* Request
-  <!--!!START SILENT -->
-  * Method: POST
-  * URL: /api/spots
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+`GET /api/spots/current` · Auth required
 
-    ```json
-    {
-      "address": "123 Disney Lane",
-      "city": "San Francisco",
-      "state": "California",
-      "country": "United States of America",
-      "lat": 37.7645358,
-      "lng": -122.4730327,
-      "name": "App Academy",
-      "description": "Place where web developers are created",
-      "price": 123
-    }
-    ```
+Returns `200` with `{ "Spots": [ ... ] }`. Each spot has the same shape as in [Get all spots](#get-all-spots), with no `page` or `size`. A spot with no reviews has `"avgRating": null`, and a spot with no preview image has `"previewImage": "none"` ([#20](https://github.com/jhoang304/Bobabnb/issues/20)).
 
-* Successful Response
-  * Status Code: 201
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+#### Get spot details
 
-    ```json
+`GET /api/spots/:spotId`
+
+Returns `200` with the spot, its review count and average rating, its images and its owner. `avgStarRating` is `null` when there are no reviews.
+
+```json
+{
+  "id": 1,
+  "ownerId": 1,
+  "address": "5315 Cypress Creek Pkwy C",
+  "city": "Houston",
+  "state": "Texas",
+  "country": "United States of America",
+  "lat": 29.9548,
+  "lng": -95.434,
+  "name": "Teahouse",
+  "description": "Traditional tea flavors and recipes from a brand built over two decades.",
+  "price": 67,
+  "createdAt": "2026-09-12T21:18:45.563Z",
+  "updatedAt": "2026-09-12T21:18:45.563Z",
+  "numReviews": 3,
+  "avgStarRating": 4,
+  "SpotImages": [
+    { "id": 1, "url": "https://images.unsplash.com/photo-1558857563-b371033873b8?w=1200&q=80", "preview": true },
+    { "id": 2, "url": "https://images.unsplash.com/photo-1541696490-8744a5dc0228?w=1200&q=80", "preview": false }
+  ],
+  "Owner": {
+    "id": 1,
+    "firstName": "Harper",
+    "lastName": "Mitchell"
+  }
+}
+```
+
+| Status | When | Body |
+| --- | --- | --- |
+| `404` | No spot with that id | `{ "message": "Spot couldn't be found" }` |
+
+#### Create a spot
+
+`POST /api/spots` · Auth required
+
+```json
+{
+  "address": "5315 Cypress Creek Pkwy C",
+  "city": "Houston",
+  "state": "Texas",
+  "country": "United States of America",
+  "lat": 29.9548,
+  "lng": -95.434,
+  "name": "Teahouse",
+  "description": "Traditional tea flavors and recipes from a brand built over two decades.",
+  "price": 67
+}
+```
+
+All fields are required. `lat` and `lng` must be numbers, `name` can be at most 50 characters, and `price` must be at least 1. The web forms currently send `40` for both `lat` and `lng` ([#28](https://github.com/jhoang304/Bobabnb/issues/28)).
+
+Returns `201` with the new spot, including `id`, `ownerId`, `createdAt` and `updatedAt`.
+
+| Status | When | Body |
+| --- | --- | --- |
+| `400` | A field is missing or invalid | `"message": "Bad Request", "errors": { "address": "Street address is required", "city": "City is required", "state": "State is required", "country": "Country is required", "lat": "Latitude is not valid", "lng": "Longitude is not valid", "name": "Name must be less than 50 characters", "description": "Description is required", "price": "Price per day is required" }` |
+
+#### Edit a spot
+
+`PUT /api/spots/:spotId` · Auth required · Owner only
+
+Takes the same body and validation as [Create a spot](#create-a-spot), except that `price` has no minimum. Returns `200` with the updated spot.
+
+| Status | When | Body |
+| --- | --- | --- |
+| `400` | A field is missing or invalid | Same as [Create a spot](#create-a-spot) |
+| `403` | You don't own the spot | `{ "message": "Only the owner can update this spot" }` |
+| `404` | No spot with that id | `{ "message": "Spot couldn't be found" }` |
+
+#### Delete a spot
+
+`DELETE /api/spots/:spotId` · Auth required · Owner only
+
+Returns `200` with `{ "message": "Successfully deleted" }`.
+
+| Status | When | Body |
+| --- | --- | --- |
+| `403` | You don't own the spot | `{ "message": "Only the owner can delete this spot" }` |
+| `404` | No spot with that id | `{ "message": "Spot couldn't be found" }` |
+
+#### Add an image to a spot
+
+`POST /api/spots/:spotId/images` · Auth required · Owner only
+
+```json
+{
+  "url": "https://example.com/teahouse.jpg",
+  "preview": true
+}
+```
+
+Returns `200` with `{ "id": 81, "url": "https://example.com/teahouse.jpg", "preview": true }`.
+
+| Status | When | Body |
+| --- | --- | --- |
+| `403` | You don't own the spot | `{ "message": "Only the owner can add images to this spot" }` |
+| `404` | No spot with that id | `{ "message": "Spot couldn't be found" }` |
+| `404` | `url` is missing (should be `400`, [#20](https://github.com/jhoang304/Bobabnb/issues/20)) | `{ "message": "Image is required" }` |
+
+#### Delete a spot image
+
+`DELETE /api/spot-images/:imageId` · Auth required · Spot owner only
+
+Returns `200` with `{ "message": "successfully deleted" }`.
+
+| Status | When | Body |
+| --- | --- | --- |
+| `403` | You don't own the spot | `{ "message": "Only the user can delete the image of their spot" }` |
+| `404` | No image with that id | `{ "message": "Spot Image couldn't be found" }` |
+
+### Reviews
+
+#### Get reviews for a spot
+
+`GET /api/spots/:spotId/reviews`
+
+Returns `200`:
+
+```json
+{
+  "Reviews": [
     {
       "id": 1,
-      "ownerId": 1,
-      "address": "123 Disney Lane",
-      "city": "San Francisco",
-      "state": "California",
-      "country": "United States of America",
-      "lat": 37.7645358,
-      "lng": -122.4730327,
-      "name": "App Academy",
-      "description": "Place where web developers are created",
-      "price": 123,
-      "createdAt": "2021-11-19 20:39:36",
-      "updatedAt": "2021-11-19 20:39:36"
-    }
-    ```
-
-* Error Response: Body validation error
-  * Status Code: 400
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Bad Request", // (or "Validation error" if generated by Sequelize),
-      "errors": {
-        "address": "Street address is required",
-        "city": "City is required",
-        "state": "State is required",
-        "country": "Country is required",
-        "lat": "Latitude is not valid",
-        "lng": "Longitude is not valid",
-        "name": "Name must be less than 50 characters",
-        "description": "Description is required",
-        "price": "Price per day is required"
-      }
-    }
-    ```
-
-### Add an Image to a Spot based on the Spot's id
-
-Create and return a new image for a spot specified by id.
-
-* Require Authentication: true
-* Require proper authorization: Spot must belong to the current user
-* Request
-  <!--!!START SILENT -->
-  * Method: POST
-  * URL: /api/spots/:spotId/images
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "url": "image url",
-      "preview": true
-    }
-    ```
-
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "id": 1,
-      "url": "image url",
-      "preview": true
-    }
-    ```
-
-* Error response: Couldn't find a Spot with the specified id
-  * Status Code: 404
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Spot couldn't be found"
-    }
-    ```
-
-### Edit a Spot
-
-Updates and returns an existing spot.
-
-* Require Authentication: true
-* Require proper authorization: Spot must belong to the current user
-* Request
-  <!--!!START SILENT -->
-  * Method: PUT
-  * URL: /api/spots/:spotId
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "address": "123 Disney Lane",
-      "city": "San Francisco",
-      "state": "California",
-      "country": "United States of America",
-      "lat": 37.7645358,
-      "lng": -122.4730327,
-      "name": "App Academy",
-      "description": "Place where web developers are created",
-      "price": 123
-    }
-    ```
-
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "id": 1,
-      "ownerId": 1,
-      "address": "123 Disney Lane",
-      "city": "San Francisco",
-      "state": "California",
-      "country": "United States of America",
-      "lat": 37.7645358,
-      "lng": -122.4730327,
-      "name": "App Academy",
-      "description": "Place where web developers are created",
-      "price": 123,
-      "createdAt": "2021-11-19 20:39:36",
-      "updatedAt": "2021-11-20 10:06:40"
-    }
-    ```
-
-* Error Response: Body validation error
-  * Status Code: 400
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Bad Request", // (or "Validation error" if generated by Sequelize),
-      "errors": {
-        "address": "Street address is required",
-        "city": "City is required",
-        "state": "State is required",
-        "country": "Country is required",
-        "lat": "Latitude is not valid",
-        "lng": "Longitude is not valid",
-        "name": "Name must be less than 50 characters",
-        "description": "Description is required",
-        "price": "Price per day is required"
-      }
-    }
-    ```
-
-* Error response: Couldn't find a Spot with the specified id
-  * Status Code: 404
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Spot couldn't be found"
-    }
-    ```
-
-### Delete a Spot
-
-Deletes an existing spot.
-
-* Require Authentication: true
-* Require proper authorization: Spot must belong to the current user
-* Request
-  <!--!!START SILENT -->
-  * Method: DELETE
-  * URL: /api/spots/:spotId
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Body: none
-
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Successfully deleted"
-    }
-    ```
-
-* Error response: Couldn't find a Spot with the specified id
-  * Status Code: 404
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Spot couldn't be found"
-    }
-    ```
-
-## REVIEWS
-
-### Get all Reviews of the Current User
-
-Returns all the reviews written by the current user.
-
-* Require Authentication: true
-* Request
-  <!--!!START SILENT -->
-  * Method: GET
-  * URL: /api/reviews/current
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Body: none
-
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "Reviews": [
-        {
-          "id": 1,
-          "userId": 1,
-          "spotId": 1,
-          "review": "This was an awesome spot!",
-          "stars": 5,
-          "createdAt": "2021-11-19 20:39:36",
-          "updatedAt": "2021-11-19 20:39:36" ,
-          "User": {
-            "id": 1,
-            "firstName": "John",
-            "lastName": "Smith"
-          },
-          "Spot": {
-            "id": 1,
-            "ownerId": 1,
-            "address": "123 Disney Lane",
-            "city": "San Francisco",
-            "state": "California",
-            "country": "United States of America",
-            "lat": 37.7645358,
-            "lng": -122.4730327,
-            "name": "App Academy",
-            "price": 123,
-            "previewImage": "image url"
-          },
-          "ReviewImages": [
-            {
-              "id": 1,
-              "url": "image url"
-            }
-          ]
-        }
-      ]
-    }
-    ```
-
-### Get all Reviews by a Spot's id
-
-Returns all the reviews that belong to a spot specified by id.
-
-* Require Authentication: false
-* Request
-  <!--!!START SILENT -->
-  * Method: GET
-  * URL: /api/spots/:spotId/reviews
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Body: none
-
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "Reviews": [
-        {
-          "id": 1,
-          "userId": 1,
-          "spotId": 1,
-          "review": "This was an awesome spot!",
-          "stars": 5,
-          "createdAt": "2021-11-19 20:39:36",
-          "updatedAt": "2021-11-19 20:39:36" ,
-          "User": {
-            "id": 1,
-            "firstName": "John",
-            "lastName": "Smith"
-          },
-          "ReviewImages": [
-            {
-              "id": 1,
-              "url": "image url"
-            }
-          ],
-        }
-      ]
-    }
-    ```
-
-* Error response: Couldn't find a Spot with the specified id
-  * Status Code: 404
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Spot couldn't be found"
-    }
-    ```
-
-### Create a Review for a Spot based on the Spot's id
-
-Create and return a new review for a spot specified by id.
-
-* Require Authentication: true
-* Request
-  <!--!!START SILENT -->
-  * Method: POST
-  * URL: /api/spots/:spotId/reviews
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "review": "This was an awesome spot!",
-      "stars": 5,
-    }
-    ```
-
-* Successful Response
-  * Status Code: 201
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "id": 1,
+      "spotId": 3,
       "userId": 1,
-      "spotId": 1,
-      "review": "This was an awesome spot!",
-      "stars": 5,
-      "createdAt": "2021-11-19 20:39:36",
-      "updatedAt": "2021-11-19 20:39:36"
+      "review": "Their handmade boba is so good, but they put too much ice in their drinks",
+      "stars": 4,
+      "createdAt": "2026-09-12T21:18:45.563Z",
+      "updatedAt": "2026-09-12T21:18:45.563Z",
+      "User": { "id": 1, "firstName": "Harper", "lastName": "Mitchell" },
+      "ReviewImages": [
+        { "id": 1, "url": "https://images.unsplash.com/photo-1558857563-b371033873b8?w=800&q=80" }
+      ]
     }
-    ```
+  ]
+}
+```
 
-* Error Response: Body validation errors
-  * Status Code: 400
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+| Status | When | Body |
+| --- | --- | --- |
+| `404` | No spot with that id | `{ "message": "Spot couldn't be found" }` |
 
-    ```json
+#### Get your reviews
+
+`GET /api/reviews/current` · Auth required
+
+Returns `200` with `{ "Reviews": [ ... ] }`, in the same shape as [Get reviews for a spot](#get-reviews-for-a-spot). Each review also has a `Spot` object that leaves out `description`, `createdAt` and `updatedAt` and adds `previewImage` (`"none"` if the spot has no preview image).
+
+#### Create a review
+
+`POST /api/spots/:spotId/reviews` · Auth required
+
+```json
+{
+  "review": "Great variety of milk teas",
+  "stars": 5
+}
+```
+
+Returns `201` with the new review (`id`, `spotId`, `userId`, `review`, `stars`, `createdAt`, `updatedAt`). You can review a spot only once. Reviews longer than 255 characters fail on PostgreSQL ([#19](https://github.com/jhoang304/Bobabnb/issues/19)).
+
+| Status | When | Body |
+| --- | --- | --- |
+| `400` | `review` is missing, or `stars` isn't between 1 and 5 | `"message": "Bad Request", "errors": { "reviewError": "Review text is required", "starError": "Stars must be an integer from 1 to 5" }` |
+| `404` | No spot with that id | `{ "message": "Spot couldn't be found" }` |
+| `500` | You already reviewed this spot | `{ "message": "User already has a review for this spot" }` |
+
+The `400` error keys are `reviewError` and `starError` here, but `review` and `stars` in [Edit a review](#edit-a-review) ([#11](https://github.com/jhoang304/Bobabnb/issues/11)).
+
+#### Edit a review
+
+`PUT /api/reviews/:reviewId` · Auth required · Author only
+
+Takes the same body as [Create a review](#create-a-review) and returns `200` with the updated review.
+
+| Status | When | Body |
+| --- | --- | --- |
+| `400` | `review` is missing, or `stars` isn't between 1 and 5 | `"message": "Bad Request", "errors": { "review": "Review text is required", "stars": "Stars must be an integer from 1 to 5" }` |
+| `403` | You didn't write the review | `{ "message": "Only the owner can update this review" }` |
+| `404` | No review with that id | `{ "message": "Review couldn't be found" }` |
+
+#### Delete a review
+
+`DELETE /api/reviews/:reviewId` · Auth required · Author only
+
+Returns `200` with `{ "message": "Successfully deleted" }`.
+
+| Status | When | Body |
+| --- | --- | --- |
+| `403` | You didn't write the review | `{ "message": "Only the owner can delete this review" }` |
+| `404` | No review with that id | `{ "message": "Review couldn't be found" }` |
+
+#### Add an image to a review
+
+`POST /api/reviews/:reviewId/images` · Auth required · Author only
+
+```json
+{
+  "url": "https://example.com/my-drink.jpg"
+}
+```
+
+Returns `200` with `{ "id": 13, "url": "https://example.com/my-drink.jpg" }`.
+
+| Status | When | Body |
+| --- | --- | --- |
+| `403` | You didn't write the review | `{ "message": "Only the owner can add images to this review" }` |
+| `403` | The image limit was reached | `{ "message": "Maximum number of images for this resource was reached" }` |
+| `404` | No review with that id | `{ "message": "Review couldn't be found" }` |
+
+The limit is meant to be 10 images per review, but it counts every review image in the database, so it always fails once the seed data is loaded ([#9](https://github.com/jhoang304/Bobabnb/issues/9)).
+
+#### Delete a review image
+
+`DELETE /api/review-images/:imageId` · Auth required · Review author only
+
+Returns `200` with `{ "message": "successfully deleted" }`.
+
+| Status | When | Body |
+| --- | --- | --- |
+| `403` | You didn't write the review | `{ "message": "Only the user can delete the image of their review" }` |
+| `404` | No image with that id | `{ "message": "Review Image couldn't be found" }` |
+
+### Bookings
+
+#### Get your bookings
+
+`GET /api/bookings/current` · Auth required
+
+Returns `200`:
+
+```json
+{
+  "Bookings": [
     {
-      "message": "Bad Request", // (or "Validation error" if generated by Sequelize),
-      "errors": {
-        "review": "Review text is required",
-        "stars": "Stars must be an integer from 1 to 5",
-      }
-    }
-    ```
-
-* Error response: Couldn't find a Spot with the specified id
-  * Status Code: 404
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Spot couldn't be found"
-    }
-    ```
-
-* Error response: Review from the current user already exists for the Spot
-  * Status Code: 500
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "User already has a review for this spot"
-    }
-    ```
-
-### Add an Image to a Review based on the Review's id
-
-Create and return a new image for a review specified by id.
-
-* Require Authentication: true
-* Require proper authorization: Review must belong to the current user
-* Request
-  <!--!!START SILENT -->
-  * Method: POST
-  * URL: /api/reviews/:reviewId/images
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "url": "image url"
-    }
-    ```
-
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "id": 1,
-      "url": "image url"
-    }
-    ```
-
-* Error response: Couldn't find a Review with the specified id
-  * Status Code: 404
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Review couldn't be found"
-    }
-    ```
-
-* Error response: Cannot add any more images because there is a maximum of 10
-  images per resource
-  * Status Code: 403
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Maximum number of images for this resource was reached"
-    }
-    ```
-
-### Edit a Review
-
-Update and return an existing review.
-
-* Require Authentication: true
-* Require proper authorization: Review must belong to the current user
-* Request
-  <!--!!START SILENT -->
-  * Method: PUT
-  * URL: /api/reviews/:reviewId
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "review": "This was an awesome spot!",
-      "stars": 5,
-    }
-    ```
-
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "id": 1,
+      "id": 13,
+      "spotId": 3,
       "userId": 1,
-      "spotId": 1,
-      "review": "This was an awesome spot!",
-      "stars": 5,
-      "createdAt": "2021-11-19 20:39:36",
-      "updatedAt": "2021-11-20 10:06:40"
-    }
-    ```
-
-* Error Response: Body validation errors
-  * Status Code: 400
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Bad Request", // (or "Validation error" if generated by Sequelize),
-      "errors": {
-        "review": "Review text is required",
-        "stars": "Stars must be an integer from 1 to 5",
+      "startDate": "2030-01-01T00:00:00.000Z",
+      "endDate": "2030-01-05T00:00:00.000Z",
+      "createdAt": "2026-09-12T21:18:45.563Z",
+      "updatedAt": "2026-09-12T21:18:45.563Z",
+      "Spot": {
+        "id": 3,
+        "ownerId": 2,
+        "address": "9889 Bellaire Blvd",
+        "city": "Houston",
+        "state": "Texas",
+        "country": "United States of America",
+        "lat": 29.705,
+        "lng": -95.5535,
+        "name": "Xing Fu Tang",
+        "price": 200,
+        "previewImage": "https://images.unsplash.com/photo-1756132539966-8d65f7a9eed8?w=1200&q=80"
       }
     }
-    ```
+  ]
+}
+```
 
-* Error response: Couldn't find a Review with the specified id
-  * Status Code: 404
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+#### Get bookings for a spot
 
-    ```json
+`GET /api/spots/:spotId/bookings` · Auth required
+
+If you don't own the spot, each booking only has its dates:
+
+```json
+{
+  "Bookings": [
+    { "spotId": 3, "startDate": "2030-01-01T00:00:00.000Z", "endDate": "2030-01-05T00:00:00.000Z" }
+  ]
+}
+```
+
+If you own the spot, each booking has every field plus the guest:
+
+```json
+{
+  "Bookings": [
     {
-      "message": "Review couldn't be found"
+      "id": 13,
+      "spotId": 3,
+      "userId": 1,
+      "startDate": "2030-01-01T00:00:00.000Z",
+      "endDate": "2030-01-05T00:00:00.000Z",
+      "createdAt": "2026-09-12T21:18:45.563Z",
+      "updatedAt": "2026-09-12T21:18:45.563Z",
+      "User": { "id": 1, "firstName": "Harper", "lastName": "Mitchell" }
     }
-    ```
+  ]
+}
+```
 
-### Delete a Review
+| Status | When | Body |
+| --- | --- | --- |
+| `404` | No spot with that id | `{ "message": "Spot couldn't be found" }` |
 
-Delete an existing review.
+#### Create a booking
 
-* Require Authentication: true
-* Require proper authorization: Review must belong to the current user
-* Request
-  <!--!!START SILENT -->
-  * Method: DELETE
-  * URL: /api/reviews/:reviewId
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Body: none
+`POST /api/spots/:spotId/bookings` · Auth required · Not the spot's owner
 
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+```json
+{
+  "startDate": "2030-01-01",
+  "endDate": "2030-01-05"
+}
+```
 
-    ```json
-    {
-      "message": "Successfully deleted"
-    }
-    ```
+Returns `200` with the new booking (`id`, `spotId`, `userId`, `startDate`, `endDate`, `createdAt`, `updatedAt`).
 
-* Error response: Couldn't find a Review with the specified id
-  * Status Code: 404
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+| Status | When | Body |
+| --- | --- | --- |
+| `400` | `endDate` is missing, or is on or before `startDate` | `"message": "Bad Request", "errors": { "endDate": "endDate cannot be on or before startDate" }` |
+| `403` | You own the spot | `{ "message": "Owner cannot book their own spot" }` |
+| `403` | The dates overlap an existing booking | `"message": "Sorry, this spot is already booked for the specified dates", "errors": { "startDate": "Start date conflicts with an existing booking", "endDate": "End date conflicts with an existing booking" }` |
+| `404` | No spot with that id | `{ "message": "Spot couldn't be found" }` |
 
-    ```json
-    {
-      "message": "Review couldn't be found"
-    }
-    ```
+The overlap `errors` object only includes the dates that fall inside an existing booking. A new booking that completely surrounds an existing one isn't caught ([#8](https://github.com/jhoang304/Bobabnb/issues/8)).
 
-## BOOKINGS
+#### Edit a booking
 
-### Get all of the Current User's Bookings
+`PUT /api/bookings/:bookingId` · Auth required · Booker only
 
-Return all the bookings that the current user has made.
+Takes the same body as [Create a booking](#create-a-booking) and returns `200` with the updated booking.
 
-* Require Authentication: true
-* Request
-  <!--!!START SILENT -->
-  * Method: GET
-  * URL: /api/bookings/current
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Body: none
+| Status | When | Body |
+| --- | --- | --- |
+| `400` | `endDate` is missing, or is on or before `startDate` | `"message": "Bad Request", "errors": { "endDate": "endDate cannot come before startDate" }` |
+| `403` | You didn't make the booking | `{ "message": "Only the user can edit their booking" }` |
+| `403` | The booking's end date has passed | `{ "message": "Past bookings can't be modified" }` |
+| `403` | The new dates overlap a booking | Same as [Create a booking](#create-a-booking) |
+| `404` | No booking with that id | `{ "message": "Booking couldn't be found" }` |
 
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+The overlap check includes the booking being edited, so new dates that overlap its current dates are rejected ([#8](https://github.com/jhoang304/Bobabnb/issues/8)).
 
-    ```json
-    {
-      "Bookings": [
-        {
-          "id": 1,
-          "spotId": 1,
-          "Spot": {
-            "id": 1,
-            "ownerId": 1,
-            "address": "123 Disney Lane",
-            "city": "San Francisco",
-            "state": "California",
-            "country": "United States of America",
-            "lat": 37.7645358,
-            "lng": -122.4730327,
-            "name": "App Academy",
-            "price": 123,
-            "previewImage": "image url"
-          },
-          "userId": 2,
-          "startDate": "2021-11-19",
-          "endDate": "2021-11-20",
-          "createdAt": "2021-11-19 20:39:36",
-          "updatedAt": "2021-11-19 20:39:36"
-        }
-      ]
-    }
-    ```
+#### Delete a booking
 
-### Get all Bookings for a Spot based on the Spot's id
+`DELETE /api/bookings/:bookingId` · Auth required · Booker or spot owner
 
-Return all the bookings for a spot specified by id.
+Returns `200` with `{ "message": "Successfully deleted" }`.
 
-* Require Authentication: true
-* Request
-  <!--!!START SILENT -->
-  * Method: GET
-  * URL: /api/spots/:spotId/bookings
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Body: none
+| Status | When | Body |
+| --- | --- | --- |
+| `403` | The booking has already started | `{ "message": "Bookings that have been started can't be deleted" }` |
+| `403` | You didn't make the booking and don't own the spot | `{ "message": "Booking must belong to the current user or the Spot must belong to the current user" }` |
+| `404` | No booking with that id | `{ "message": "Booking couldn't be found" }` |
 
-* Successful Response: If you ARE NOT the owner of the spot.
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+## Roadmap
 
-    ```json
-    {
-      "Bookings": [
-        {
-          "spotId": 1,
-          "startDate": "2021-11-19",
-          "endDate": "2021-11-20"
-        }
-      ]
-    }
-    ```
+Planned features:
 
-* Successful Response: If you ARE the owner of the spot.
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+- Booking flow and a Manage Bookings page ([#33](https://github.com/jhoang304/Bobabnb/issues/33))
+- Search, filters and pagination on the home page ([#34](https://github.com/jhoang304/Bobabnb/issues/34))
+- Manage Reviews page and user profile ([#35](https://github.com/jhoang304/Bobabnb/issues/35))
+- Managing spot images on the Update Spot page ([#36](https://github.com/jhoang304/Bobabnb/issues/36))
+- Review photos ([#37](https://github.com/jhoang304/Bobabnb/issues/37))
+- Map view of spots ([#38](https://github.com/jhoang304/Bobabnb/issues/38))
+- Uploading images instead of pasting URLs ([#39](https://github.com/jhoang304/Bobabnb/issues/39))
 
-    ```json
-    {
-      "Bookings": [
-        {
-          "User": {
-            "id": 2,
-            "firstName": "John",
-            "lastName": "Smith"
-          },
-          "id": 1,
-          "spotId": 1,
-          "userId": 2,
-          "startDate": "2021-11-19",
-          "endDate": "2021-11-20",
-          "createdAt": "2021-11-19 20:39:36",
-          "updatedAt": "2021-11-19 20:39:36"
-        }
-      ]
-    }
-    ```
+Bugs and improvements are tracked in [GitHub Issues](https://github.com/jhoang304/Bobabnb/issues).
 
-* Error response: Couldn't find a Spot with the specified id
-  * Status Code: 404
-  * Headers:
-    * Content-Type: application/json
-  * Body:
+## Author
 
-    ```json
-    {
-      "message": "Spot couldn't be found"
-    }
-    ```
-
-### Create a Booking from a Spot based on the Spot's id
-
-Create and return a new booking from a spot specified by id.
-
-* Require Authentication: true
-* Require proper authorization: Spot must NOT belong to the current user
-* Request
-  <!--!!START SILENT -->
-  * Method: POST
-  * URL: /api/spots/:spotId/bookings
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Body:
-
-    ```json
-    {
-      "startDate": "2021-11-19",
-      "endDate": "2021-11-20"
-    }
-    ```
-
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "id": 1,
-      "spotId": 1,
-      "userId": 2,
-      "startDate": "2021-11-19",
-      "endDate": "2021-11-20",
-      "createdAt": "2021-11-19 20:39:36",
-      "updatedAt": "2021-11-19 20:39:36"
-    }
-    ```
-
-* Error response: Body validation errors
-  * Status Code: 400
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Bad Request", // (or "Validation error" if generated by Sequelize),
-      "errors": {
-        "endDate": "endDate cannot be on or before startDate"
-      }
-    }
-    ```
-
-* Error response: Couldn't find a Spot with the specified id
-  * Status Code: 404
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Spot couldn't be found"
-    }
-    ```
-
-* Error response: Booking conflict
-  * Status Code: 403
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Sorry, this spot is already booked for the specified dates",
-      "errors": {
-        "startDate": "Start date conflicts with an existing booking",
-        "endDate": "End date conflicts with an existing booking"
-      }
-    }
-    ```
-
-### Edit a Booking
-
-Update and return an existing booking.
-
-* Require Authentication: true
-* Require proper authorization: Booking must belong to the current user
-* Request
-  <!--!!START SILENT -->
-  * Method: PUT
-  * URL: /api/bookings/:bookingId
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "startDate": "2021-11-19",
-      "endDate": "2021-11-20"
-    }
-    ```
-
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "id": 1,
-      "spotId": 1,
-      "userId": 2,
-      "startDate": "2021-11-19",
-      "endDate": "2021-11-20",
-      "createdAt": "2021-11-19 20:39:36",
-      "updatedAt": "2021-11-20 10:06:40"
-    }
-    ```
-
-* Error response: Body validation errors
-  * Status Code: 400
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Bad Request", // (or "Validation error" if generated by Sequelize),
-      "errors": {
-        "endDate": "endDate cannot come before startDate"
-      }
-    }
-    ```
-
-* Error response: Couldn't find a Booking with the specified id
-  * Status Code: 404
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Booking couldn't be found"
-    }
-    ```
-
-* Error response: Can't edit a booking that's past the end date
-  * Status Code: 403
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Past bookings can't be modified"
-    }
-    ```
-
-* Error response: Booking conflict
-  * Status Code: 403
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Sorry, this spot is already booked for the specified dates",
-      "errors": {
-        "startDate": "Start date conflicts with an existing booking",
-        "endDate": "End date conflicts with an existing booking"
-      }
-    }
-    ```
-
-### Delete a Booking
-
-Delete an existing booking.
-
-* Require Authentication: true
-* Require proper authorization: Booking must belong to the current user or the
-  Spot must belong to the current user
-* Request
-  <!--!!START SILENT -->
-  * Method: DELETE
-  * URL: /api/bookings/:bookingId
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Body: none
-
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Successfully deleted"
-    }
-    ```
-
-* Error response: Couldn't find a Booking with the specified id
-  * Status Code: 404
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Booking couldn't be found"
-    }
-    ```
-
-* Error response: Bookings that have been started can't be deleted
-  * Status Code: 403
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Bookings that have been started can't be deleted"
-    }
-    ```
-
-## IMAGES
-
-### Delete a Spot Image
-
-Delete an existing image for a Spot.
-
-* Require Authentication: true
-* Require proper authorization: Spot must belong to the current user
-* Request
-  <!--!!START SILENT -->
-  * Method: DELETE
-  * URL: /api/spot-images/:imageId
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Body: none
-
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Successfully deleted"
-    }
-    ```
-
-* Error response: Couldn't find a Spot Image with the specified id
-  * Status Code: 404
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Spot Image couldn't be found"
-    }
-    ```
-
-### Delete a Review Image
-
-Delete an existing image for a Review.
-
-* Require Authentication: true
-* Require proper authorization: Review must belong to the current user
-* Request
-  <!--!!START SILENT -->
-  * Method: DELETE
-  * URL: /api/review-images/:imageId
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Body: none
-
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Successfully deleted"
-    }
-    ```
-
-* Error response: Couldn't find a Review Image with the specified id
-  * Status Code: 404
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Review Image couldn't be found"
-    }
-    ```
-
-## Add Query Filters to Get All Spots
-
-Return spots filtered by query parameters.
-
-* Require Authentication: false
-* Request
-  <!--!!START SILENT -->
-  * Method: GET
-  * URL: /api/spots
-  <!--!!END -->
-  <!--!!ADD -->
-  <!-- * Method: ? -->
-  <!-- * URL: ? -->
-  <!--!!END_ADD -->
-  * Query Parameters
-    * page: integer, minimum: 1, maximum: 10, default: 1
-    * size: integer, minimum: 1, maximum: 20, default: 20
-    * minLat: decimal, optional
-    * maxLat: decimal, optional
-    * minLng: decimal, optional
-    * maxLng: decimal, optional
-    * minPrice: decimal, optional, minimum: 0
-    * maxPrice: decimal, optional, minimum: 0
-  * Body: none
-
-* Successful Response
-  * Status Code: 200
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "Spots": [
-        {
-          "id": 1,
-          "ownerId": 1,
-          "address": "123 Disney Lane",
-          "city": "San Francisco",
-          "state": "California",
-          "country": "United States of America",
-          "lat": 37.7645358,
-          "lng": -122.4730327,
-          "name": "App Academy",
-          "description": "Place where web developers are created",
-          "price": 123,
-          "createdAt": "2021-11-19 20:39:36",
-          "updatedAt": "2021-11-19 20:39:36",
-          "avgRating": 4.5,
-          "previewImage": "image url"
-        }
-      ],
-      "page": 2,
-      "size": 25
-    }
-    ```
-
-* Error Response: Query parameter validation errors
-  * Status Code: 400
-  * Headers:
-    * Content-Type: application/json
-  * Body:
-
-    ```json
-    {
-      "message": "Bad Request", // (or "Validation error" if generated by Sequelize),
-      "errors": {
-        "page": "Page must be greater than or equal to 1",
-        "size": "Size must be greater than or equal to 1",
-        "maxLat": "Maximum latitude is invalid",
-        "minLat": "Minimum latitude is invalid",
-        "minLng": "Maximum longitude is invalid",
-        "maxLng": "Minimum longitude is invalid",
-        "minPrice": "Minimum price must be greater than or equal to 0",
-        "maxPrice": "Maximum price must be greater than or equal to 0"
-      }
-    }
-    ```
+Joshua Hoang: [GitHub](https://github.com/jhoang304) · [Portfolio](https://jhoang304.github.io/)
