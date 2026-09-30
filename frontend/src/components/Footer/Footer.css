@@ -1,0 +1,35 @@
+.Footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px 20px;
+    border-top: 2px solid rgb(201, 201, 201);
+    padding: 20px;
+    font-size: 14px;
+}
+
+.footer-links {
+    display: flex;
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.footer-links a,
+.footer-links a:visited {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: black;
+    font-weight: bold;
+}
+
+.footer-links a:hover {
+    color: #00525E;
+}
+
+.footer-links i {
+    font-size: 18px;
+}
