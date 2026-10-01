@@ -652,11 +652,9 @@ Returns `201` with the new review (`id`, `spotId`, `userId`, `review`, `stars`, 
 
 | Status | When | Body |
 | --- | --- | --- |
-| `400` | `review` is missing, or `stars` isn't between 1 and 5 | `"message": "Bad Request", "errors": { "reviewError": "Review text is required", "starError": "Stars must be an integer from 1 to 5" }` |
+| `400` | `review` is missing, or `stars` isn't between 1 and 5 | `"message": "Bad Request", "errors": { "review": "Review text is required", "stars": "Stars must be an integer from 1 to 5" }`, with only the fields that failed |
 | `404` | No spot with that id | `{ "message": "Spot couldn't be found" }` |
 | `500` | You already reviewed this spot | `{ "message": "User already has a review for this spot" }` |
-
-The `400` error keys are `reviewError` and `starError` here, but `review` and `stars` in [Edit a review](#edit-a-review) ([#11](https://github.com/jhoang304/Bobabnb/issues/11)).
 
 #### Edit a review
 

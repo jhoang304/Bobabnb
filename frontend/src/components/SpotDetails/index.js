@@ -162,7 +162,7 @@ export default function SpotDetail() {
                <OpenModalButton
               //  id="deleteButton"
                buttonText="Post Your Review"
-               modalComponent={<CreateReviewModal spot={spot} user={sessionUser} />}
+               modalComponent={<CreateReviewModal spot={spot} />}
                />}
             </div>
         {/* </div> */}
