@@ -297,15 +297,14 @@ router.post('/:spotId/reviews', requireAuth, async (req, res) => {
     const spotId = parseInt(req.params.spotId);
     const userId = req.user.id;
 
-    let reviewError;
-    let starError;
-    if (!review) reviewError = "Review text is required";
-    if (!stars || stars < 1 || stars > 5) starError = "Stars must be an integer from 1 to 5";
-    if(reviewError || starError) {
+    const errors = {};
+    if (!review) errors.review = "Review text is required";
+    if (!stars || stars < 1 || stars > 5) errors.stars = "Stars must be an integer from 1 to 5";
+    if (Object.keys(errors).length > 0) {
         res.status(400);
         return res.json({
             message: "Bad Request",
-            errors: { reviewError, starError}
+            errors
         });
     };
 

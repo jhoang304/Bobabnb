@@ -76,24 +76,18 @@ export const getCurrentUserReviewsThunk = (review) => async (dispatch) => {
     }
 }
 
+// csrfFetch throws the response when the server rejects the review, so callers can read its errors
 export const createReviewThunk = (spotId, review) => async (dispatch) => {
-    try {
-        const res = await csrfFetch(`/api/spots/${spotId}/reviews`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(review)
-        })
-        if (res.ok) {
-            const newReview = await res.json();
-            dispatch(createReview(newReview))
-            return newReview
-        }
-    } catch (err) {
-        const errors = await err.json();
-        return errors;
-    }
+    const res = await csrfFetch(`/api/spots/${spotId}/reviews`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(review)
+    })
+    const newReview = await res.json();
+    dispatch(createReview(newReview))
+    return newReview
 }
 
 export const deleteReviewThunk = (reviewId) => async (dispatch) => {

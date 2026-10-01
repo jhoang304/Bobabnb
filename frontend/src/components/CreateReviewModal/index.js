@@ -10,7 +10,7 @@ import { spotReviewsThunk } from "../../store/review";
 import { createReviewThunk } from "../../store/review";
 import Rating from "./Rating";
 
-function CreateReviewModal({ user, spot }) {
+function CreateReviewModal({ spot }) {
   const [errors, setErrors] = useState({});
   const [stars, setStars] = useState(0);
   const [comment, setComment] = useState("");
@@ -21,11 +21,11 @@ function CreateReviewModal({ user, spot }) {
 
   useEffect(() => {
     const errors = {};
-    if (stars && stars < 1) {
+    if (comment && !stars) {
       errors.stars = "Please input a star rating";
     }
     if (comment && comment.length < 10) {
-      errors.comment = "Comment needs a minimum of 10 characters";
+      errors.review = "Comment needs a minimum of 10 characters";
     }
     setErrors(errors);
   }, [stars, comment]);
@@ -45,7 +45,7 @@ function CreateReviewModal({ user, spot }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     setErrors({});
-    const submittedReview = { userId: user.id, review: comment, stars };
+    const submittedReview = { review: comment, stars };
 
     return dispatch(createReviewThunk(spot.id, submittedReview))
       .then(() => {
@@ -55,8 +55,12 @@ function CreateReviewModal({ user, spot }) {
       })
       .catch(async (res) => {
         const data = await res.json();
-        if (data && data.errors) {
-          setErrors(data.errors);
+        const fieldErrors = data.errors || {};
+        if (fieldErrors.review || fieldErrors.stars) {
+          setErrors(fieldErrors);
+        } else {
+          // e.g. "User already has a review for this spot" or "Spot couldn't be found"
+          setErrors({ server: data.message || "Something went wrong. Please try again." });
         }
       });
   };
@@ -73,12 +77,13 @@ function CreateReviewModal({ user, spot }) {
           placeholder="Leave your review here..."
         />
       </label>
-      {errors.comment && <p>{errors.comment}</p>}
+      {errors.review && <p>{errors.review}</p>}
       <div className="rating-input">
         <Rating disabled={false} stars={stars} onChange={onChange} />
         <div>Stars</div>
-        {errors.rating && <p>{errors.rating}</p>}
       </div>
+      {errors.stars && <p>{errors.stars}</p>}
+      {errors.server && <p>{errors.server}</p>}
       <button
         onClick={handleSubmit}
         className={formDisabled ? "submit-button-inactive" : "submit-button"}
