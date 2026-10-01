@@ -691,15 +691,14 @@ Returns `200` with `{ "message": "Successfully deleted" }`.
 }
 ```
 
-Returns `200` with `{ "id": 13, "url": "https://example.com/my-drink.jpg" }`.
+Returns `200` with `{ "id": 13, "url": "https://example.com/my-drink.jpg" }`. A review can have up to 10 images.
 
 | Status | When | Body |
 | --- | --- | --- |
+| `400` | `url` is missing | `"message": "Bad Request", "errors": { "url": "Image URL is required" }` |
 | `403` | You didn't write the review | `{ "message": "Only the owner can add images to this review" }` |
-| `403` | The image limit was reached | `{ "message": "Maximum number of images for this resource was reached" }` |
+| `403` | The review already has 10 images | `{ "message": "Maximum number of images for this resource was reached" }` |
 | `404` | No review with that id | `{ "message": "Review couldn't be found" }` |
-
-The limit is meant to be 10 images per review, but it counts every review image in the database, so it always fails once the seed data is loaded ([#9](https://github.com/jhoang304/Bobabnb/issues/9)).
 
 #### Delete a review image
 
