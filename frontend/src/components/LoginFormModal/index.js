@@ -95,8 +95,15 @@ function LoginFormModal() {
 
 
   const loginDemo = () => {
-    dispatch(sessionActions.login({ credential: "Demo-lition", password: "password" }))
-    .then(closeModal)
+    setErrors({});
+    return dispatch(sessionActions.login({ credential: "Demo-lition", password: "password" }))
+      .then(closeModal)
+      .catch(async (res) => {
+        const data = await res.json();
+        if (data && data.errors) {
+          setErrors(data.errors);
+        }
+      });
   }
 
 
@@ -128,7 +135,7 @@ function LoginFormModal() {
         </label>
         {errors.credential && <p>{errors.credential}</p>}
         <button className={disabled ? "submit-button-inactive" : "submit-button-login"} type="submit" disabled={disabled}>Log In</button>
-        <button className="demo-button" onClick={loginDemo}>DemoUser Login</button>
+        <button type="button" className="demo-button" onClick={loginDemo}>DemoUser Login</button>
       </form>
     </>
   );
