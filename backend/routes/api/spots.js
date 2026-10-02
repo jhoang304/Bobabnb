@@ -148,16 +148,24 @@ router.get('/:spotId', async (req, res) => {
     }
 });
 
+const MAX_PAGE_SIZE = 20;
+
+// Returns the number for a whole-number string like "3", or null for "2.5", "-1", "abc" or a repeated param
+const toPositiveInteger = (value) => {
+    const number = Number(value);
+    return /^\d+$/.test(value) && Number.isSafeInteger(number) && number >= 1 ? number : null;
+};
+
 // Get All Spots
 router.get('/', async (req, res) => {
     let { page, size, minLat, maxLat, minLng, maxLng, minPrice, maxPrice } = req.query;
 
     const errors = {};
-    if(page && (isNaN(page) || page < 1)) {
-        errors.page = "Page must be greater than or equal to 1";
+    if(page && !toPositiveInteger(page)) {
+        errors.page = "Page must be a whole number greater than or equal to 1";
     };
-    if(size && (isNaN(size) || size < 1)) {
-        errors.size = "Size must be greater than or equal to 1";
+    if(size && !toPositiveInteger(size)) {
+        errors.size = "Size must be a whole number greater than or equal to 1";
     };
     if(minLat && isNaN(minLat)) {
         errors.minLat = "Minimum latitude is invalid";
@@ -208,15 +216,9 @@ router.get('/', async (req, res) => {
         query.price = { [Op.lte]: maxPrice };
     }
 
-    const pagination = {};
-
-    if(!page) page = 1;
-    if(!size) size = 20;
-
-    if(page <= 10 && size <= 20) {
-        pagination.limit = size;
-        pagination.offset = size * (page - 1);
-    }
+    // Sizes above the maximum are capped. Pages have no upper limit; a page past the last spot is empty.
+    page = page ? toPositiveInteger(page) : 1;
+    size = Math.min(size ? toPositiveInteger(size) : MAX_PAGE_SIZE, MAX_PAGE_SIZE);
 
     const spots = await Spot.findAll({
     include: [
@@ -228,8 +230,11 @@ router.get('/', async (req, res) => {
         }
         ],
         where: query,
-        ...pagination
+        order: [['id', 'ASC']],
+        limit: size,
+        offset: size * (page - 1)
     });
+    const total = await Spot.count({ where: query });
 
     const spotsList = spots.map(spot => {
         const spotData = spot.toJSON();
@@ -245,7 +250,7 @@ router.get('/', async (req, res) => {
         return spotData;
     });
 
-    const result = { Spots: spotsList, page, size };
+    const result = { Spots: spotsList, page, size, total };
     return res.json(result);
 });
 
