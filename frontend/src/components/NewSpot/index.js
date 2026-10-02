@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useHistory } from 'react-router-dom'
-import { createSpotThunk } from '../../store/spot'
+import { createSpotThunk, spotFormErrors } from '../../store/spot'
 import './NewSpot.css'
 
 export default function CreateSpot() {
@@ -25,6 +25,7 @@ export default function CreateSpot() {
     const [image4, setImage4] = useState("")
     const [submitted, setSubmitted] = useState(false)
     const [validationErrors, setValidationErrors] = useState({})
+    const [serverError, setServerError] = useState("")
 
     useEffect(() => {
         const errorsObject = {};
@@ -89,6 +90,7 @@ export default function CreateSpot() {
             )
         }
         setValidationErrors({})
+        setServerError("")
         const spot = {address, city, state, country, name: title, description, price, lat: latitude, lng: longitude}
         const imageArray = []
 
@@ -128,22 +130,15 @@ export default function CreateSpot() {
             imageArray.push(image4Obj)
         }
 
-        const newSpot = await dispatch(createSpotThunk(spot, owner, imageArray));
-
-        setCity('');
-        setCountry('');
-        setAddress('');
-        setState('');
-        setDescription('');
-        setTitle('');
-        setPrice('');
-        setImagePreview('');
-        setImage1('');
-        setImage2('');
-        setImage3('');
-        setImage4('');
-
-        history.push(`/spots/${newSpot.id}`)
+        const result = await dispatch(createSpotThunk(spot, owner, imageArray));
+        if (result.ok) {
+            history.push(`/spots/${result.spot.id}`)
+        } else {
+            // Keep what the user typed so they can fix it and resubmit
+            const { fields, general } = spotFormErrors(result);
+            setValidationErrors(fields);
+            setServerError(general);
+        }
     }
 
     return (
@@ -269,6 +264,7 @@ export default function CreateSpot() {
                     {submitted && validationErrors.image4 && <p className="error">{validationErrors.image4}</p>}
                 </div>
             </div>
+            {serverError && <p className="error">{serverError}</p>}
             <div className="submitContainer">
             <button type='submit' className="submit-button">Create Spot</button>
             </div>

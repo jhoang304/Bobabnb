@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from 'react-redux'
 import { useEffect, useState } from 'react'
-import { updateSpotThunk, singleSpotThunk } from '../../store/spot'
+import { updateSpotThunk, singleSpotThunk, spotFormErrors } from '../../store/spot'
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
 import { useParams } from 'react-router-dom/cjs/react-router-dom.min'
 import './UpdateSpot.css'
@@ -19,10 +19,12 @@ function UpdateSpot() {
     const [title, setTitle] = useState("")
     const [price, setPrice] = useState("")
     const [validationErrors, setValidationErrors] = useState({})
+    const [serverError, setServerError] = useState("")
 
     const spot = useSelector((state) => state.spot.singleSpot);
 
     useEffect(() => {
+        setServerError("");
         dispatch(singleSpotThunk(spotId));
     }, [dispatch, spotId]);
 
@@ -83,6 +85,7 @@ function UpdateSpot() {
     }
 
     setValidationErrors({});
+    setServerError("");
     const newSpot = {
       ...spot,
       address,
@@ -96,8 +99,14 @@ function UpdateSpot() {
       price,
     };
 
-    const updatedSpot = await dispatch(updateSpotThunk(newSpot));
-    updatedSpot && history.push(`/spots/${updatedSpot.id}`);
+    const result = await dispatch(updateSpotThunk(newSpot));
+    if (result.ok) {
+      history.push(`/spots/${result.spot.id}`);
+    } else {
+      const { fields, general } = spotFormErrors(result);
+      setValidationErrors(fields);
+      setServerError(general);
+    }
   };
 
   return (
@@ -180,6 +189,7 @@ function UpdateSpot() {
                 {validationErrors.price && <p className="error">{validationErrors.price}</p>}
             </div>
         </div>
+        {serverError && <p className="error">{serverError}</p>}
         <div className='submitContainer'>
         <button type='submit' className="submit-button">Update Your Spot</button>
         </div>

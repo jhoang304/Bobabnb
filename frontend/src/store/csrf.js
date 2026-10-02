@@ -30,3 +30,16 @@ export async function csrfFetch(url, options = {}) {
 export function restoreCSRF() {
     return csrfFetch('/api/csrf/restore');
 }
+
+// Reads the body of a response that csrfFetch threw and returns { errors, message }.
+// Network failures and responses that aren't JSON get a generic message.
+export async function readErrorResponse(err) {
+    const fallback = 'Something went wrong. Please try again.';
+    if (!(err instanceof Response)) return { errors: {}, message: fallback };
+    try {
+        const data = await err.json();
+        return { errors: data.errors || {}, message: data.message || fallback };
+    } catch {
+        return { errors: {}, message: fallback };
+    }
+}

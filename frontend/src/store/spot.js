@@ -1,4 +1,4 @@
-import { csrfFetch } from "./csrf"
+import { csrfFetch, readErrorResponse } from "./csrf"
 
 const GET_ALL_SPOTS = 'spots/spots'
 const GET_SPOT_DETAILS = 'spots/single_spot'
@@ -79,7 +79,9 @@ export const singleSpotThunk = (spotId) => async (dispatch) => {
     }
 }
 
+// The create and update thunks resolve to { ok: true, spot } or { ok: false, errors, message }.
 export const createSpotThunk = (spot, owner, imagesArray) => async (dispatch) => {
+    let newSpot;
     try {
         const res = await csrfFetch('/api/spots', {
             method: 'POST',
@@ -88,51 +90,70 @@ export const createSpotThunk = (spot, owner, imagesArray) => async (dispatch) =>
             },
             body: JSON.stringify(spot)
         })
-        if (res.ok) {
-            const newSpot = await res.json();
-            const spotImagesArray = [];
+        newSpot = await res.json();
+    } catch (err) {
+        return { ok: false, ...(await readErrorResponse(err)) };
+    }
 
-            for (let image of imagesArray) {
-                image.spotId = newSpot.id;
-                const imageData = await csrfFetch(`/api/spots/${newSpot.id}/images`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(image)
-                })
-                if (imageData.ok) {
-                    const image = await imageData.json();
-                    spotImagesArray.push(image)
-                }
-            }
-            newSpot.SpotImages = spotImagesArray;
-            newSpot.owner = owner
-            await dispatch(getSpotDetailAction(newSpot))
-            return newSpot
+    const spotImagesArray = [];
+    try {
+        for (let image of imagesArray) {
+            const imageData = await csrfFetch(`/api/spots/${newSpot.id}/images`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(image)
+            })
+            spotImagesArray.push(await imageData.json())
         }
     } catch (err) {
-        const error = await err.json();
-        return error;
+        // Remove the spot so it isn't left without its images and a retry doesn't create a duplicate.
+        const removed = await csrfFetch(`/api/spots/${newSpot.id}`, { method: 'DELETE' }).then(() => true, () => false);
+        return {
+            ok: false,
+            errors: {},
+            message: removed
+                ? "An image couldn't be uploaded, so your spot wasn't saved. Please try again."
+                : "Your spot was created, but an image couldn't be uploaded. You can find it under Manage Spots."
+        };
     }
+
+    newSpot.SpotImages = spotImagesArray;
+    newSpot.owner = owner
+    dispatch(getSpotDetailAction(newSpot))
+    return { ok: true, spot: newSpot }
 }
 
 export const updateSpotThunk = (spot) => async (dispatch) => {
-    const res = await csrfFetch(`/api/spots/${spot.id}`, {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(spot)
-    });
-    if (res.ok) {
+    try {
+        const res = await csrfFetch(`/api/spots/${spot.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(spot)
+        });
         const updatedSpot = await res.json()
         dispatch(updateSpot(updatedSpot))
-        return updatedSpot
-    } else {
-        const errorData = await res.json()
-        return errorData
+        return { ok: true, spot: updatedSpot }
+    } catch (err) {
+        return { ok: false, ...(await readErrorResponse(err)) };
     }
+}
+
+// Splits a failed create/update result into errors for the form's fields (the forms call "name" "title")
+// and one general message for everything else: lat/lng, which have no inputs, and errors like 401, 403 or a network failure.
+const SPOT_FORM_FIELDS = { address: 'address', city: 'city', state: 'state', country: 'country', name: 'title', description: 'description', price: 'price' };
+export const spotFormErrors = ({ errors, message }) => {
+    const fields = {};
+    const general = [];
+    for (const [key, text] of Object.entries(errors)) {
+        if (SPOT_FORM_FIELDS[key]) fields[SPOT_FORM_FIELDS[key]] = text;
+        else if (key === 'lat' || key === 'lng') general.push(text);
+    }
+    if (!Object.keys(fields).length && !general.length) general.push(message);
+    return { fields, general: general.join(' ') };
 }
 
 export const deleteSpotThunk = (spotId) => async (dispatch) => {
