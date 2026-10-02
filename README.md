@@ -405,14 +405,12 @@ Clears the `token` cookie and returns `200` with `{ "message": "success" }`.
 
 Returns `200` with `{ "user": { ... } }` and logs the new user in.
 
+Every field must be a string. Usernames are 4 to 30 characters and can't be an email address, and passwords are at least 6 characters. First and last names are trimmed, can be up to 50 characters, and must start with a letter, followed by letters, spaces, hyphens, apostrophes or periods (for example `"Mary Ann"`, `"O'Brien"`, `"Jean-Luc"`, `"José"`).
+
 | Status | When | Body |
 | --- | --- | --- |
-| `400` | Invalid email, username shorter than 4 characters or shaped like an email, or password shorter than 6 characters | `"errors": { "email": "Please provide a valid email.", "username": "Please provide a username with at least 4 characters.", "password": "Password must be 6 characters or more." }` |
-| `500` | Email or username is already taken | `"title": "Validation error", "errors": { "email": "email must be unique" }` |
-| `500` | `firstName` or `lastName` is missing | `"errors": { "firstName": "User.firstName cannot be null" }` |
-| `500` | `firstName` or `lastName` has anything other than letters, including spaces, hyphens and apostrophes | `"errors": { "firstName": "Validation isAlpha on firstName failed" }` |
-
-These `500` responses should be `4xx` errors ([#14](https://github.com/jhoang304/Bobabnb/issues/14)).
+| `400` | A field is missing or invalid | `"errors"` with a message for each invalid field: `"email": "Please provide a valid email."`, `"username": "Please provide a username with 4 to 30 characters."` or `"Username cannot be an email."`, `"password": "Password must be 6 characters or more."`, `"firstName": "First name is required."`, `"First name must be 50 characters or fewer."` or `"First name can only contain letters, spaces, hyphens, apostrophes and periods."` (the same for `lastName`) |
+| `409` | The email or username is already taken | `"message": "User already exists", "errors": { "email": "User with that email already exists", "username": "User with that username already exists" }`, with only the fields that are taken |
 
 #### Get a CSRF token
 
