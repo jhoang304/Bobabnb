@@ -5,7 +5,7 @@ const cors = require('cors');
 const csurf = require('csurf');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
-const { ValidationError } = require('sequelize');
+const { ValidationError, UniqueConstraintError } = require('sequelize');
 
 const { environment } = require('./config');
 const isProduction = environment === 'production';
@@ -58,6 +58,8 @@ app.use((err, _req, _res, next) => {
       }
       err.title = 'Validation error';
       err.errors = errors;
+      // A unique index violation means the value is taken; any other model validation failure is bad input
+      err.status = err instanceof UniqueConstraintError ? 409 : 400;
     }
     next(err);
 });
