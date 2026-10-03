@@ -13,7 +13,7 @@ export default function SpotDetail() {
   const { spotId } = useParams();
   const dispatch = useDispatch();
   const spot = useSelector((state) => state.spot.singleSpot);
-  const reviews = useSelector((state) => state.review.reviews);
+  const reviewsById = useSelector((state) => state.review.bySpot[spotId]);
   // const user = useSelector((state) => state.review.reviews);
   const sessionUser = useSelector((state) => state.session.user);
 
@@ -34,9 +34,14 @@ export default function SpotDetail() {
     return <div>Loading Spot...</div>;
   }
 
-  if (!reviews) {
+  if (!reviewsById) {
     return <div>Loading Reviews...</div>
   }
+
+  const reviews = Object.values(reviewsById);
+  // Worked out from the loaded reviews so the summary changes as soon as a review is posted or deleted
+  const numReviews = reviews.length;
+  const avgStarRating = numReviews ? reviews.reduce((sum, review) => sum + review.stars, 0) / numReviews : null;
 
   // The API does not guarantee image order, so pick the preview explicitly and
   // keep it out of the thumbnail grid.
@@ -103,11 +108,11 @@ export default function SpotDetail() {
           {/* <div className="reviews">
           <div className="starRating">
             <i className="fa-solid fa-star"></i>
-            {spot.avgStarRating}
+            {avgStarRating}
           </div>
-          <div className="reviewCount">{spot.numReviews} reviews</div> */}
-          <div className={spot.numReviews === 0 ? "noReviews" : "reviews"}>
-              {spot.numReviews === 0 ? (
+          <div className="reviewCount">{numReviews} reviews</div> */}
+          <div className={numReviews === 0 ? "noReviews" : "reviews"}>
+              {numReviews === 0 ? (
                 <div className="noReviews">
                   <i className="fa-solid fa-star"></i>
                   <div className="newListing">New</div>
@@ -116,11 +121,11 @@ export default function SpotDetail() {
                 <div className="reviews">
                 <div className="starRating">
                   <i className="fa-solid fa-star"></i>
-                  {spot.avgStarRating.toFixed(2)}
+                  {avgStarRating.toFixed(2)}
                 </div>
                 <div className="dot">·</div>
-                  {/* <div className="reviewCount">{spot.numReviews} reviews</div> */}
-                  {spot.numReviews === 1 ? <div className="reviewCount">{spot.numReviews} review</div> : <div className="reviewCount">{spot.numReviews} reviews</div>}
+                  {/* <div className="reviewCount">{numReviews} reviews</div> */}
+                  {numReviews === 1 ? <div className="reviewCount">{numReviews} review</div> : <div className="reviewCount">{numReviews} reviews</div>}
                 </div>
               )}
           </div>
@@ -133,8 +138,8 @@ export default function SpotDetail() {
       <div className="reviewsContainer">
       {/* <div className="mainReviews">
               <div className="starRating"> */}
-               <div className={spot.numReviews === 0 ? "noReviews" : "mainReviews"}>
-                {spot.numReviews === 0 ? (
+               <div className={numReviews === 0 ? "noReviews" : "mainReviews"}>
+                {numReviews === 0 ? (
                  <div className="noReviewsContainer">
                  <div className="noReviews">
                  <i className="fa-solid fa-star"></i>
@@ -146,13 +151,13 @@ export default function SpotDetail() {
                 <div className="mainReviews">
                 <div className="starRating">
                 <i className="fa-solid fa-star"></i>
-                {spot.avgStarRating.toFixed(2)}
+                {avgStarRating.toFixed(2)}
                 </div>
                 <div className="dot">·</div>
-                {/* <div className="reviewCount">{spot.numReviews} reviews</div> */}
-                {spot.numReviews === 1 ? <div className="reviewCount">{spot.numReviews} review</div> : <div className="reviewCount">{spot.numReviews} reviews</div>}
+                {/* <div className="reviewCount">{numReviews} reviews</div> */}
+                {numReviews === 1 ? <div className="reviewCount">{numReviews} review</div> : <div className="reviewCount">{numReviews} reviews</div>}
               </div>
-            //   <div className="reviewCount">{spot.numReviews} reviews</div>
+            //   <div className="reviewCount">{numReviews} reviews</div>
             // </div>
             )}
             {/* <div> */}
@@ -182,7 +187,7 @@ export default function SpotDetail() {
               {sessionUser && sessionUser.id === review.userId && (
               <OpenModalButton
               buttonText="Delete Your Review"
-              modalComponent={<DeleteReviewModal spot={spot} review={review} />}
+              modalComponent={<DeleteReviewModal review={review} />}
               />
               )}
             </div>

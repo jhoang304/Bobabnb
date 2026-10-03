@@ -4,10 +4,8 @@ import { useState } from 'react';
 import { useHistory } from "react-router-dom/cjs/react-router-dom.min";
 import { useModal } from "../../context/Modal";
 import { deleteReviewThunk } from '../../store/review';
-import { singleSpotThunk } from "../../store/spot";
-import { spotReviewsThunk } from "../../store/review";
 
-function DeleteReviewModal ({spot, review}) {
+function DeleteReviewModal ({review}) {
     const [errors, setErrors] = useState({});
     const { closeModal } = useModal();
     const dispatch = useDispatch();
@@ -16,11 +14,9 @@ function DeleteReviewModal ({spot, review}) {
     const handleSubmit = (e) => {
         e.preventDefault();
         setErrors({});
-        return dispatch(deleteReviewThunk(review.id))
+        return dispatch(deleteReviewThunk(review))
         .then(() => {
           closeModal();
-          dispatch(singleSpotThunk(spot.id));
-          dispatch(spotReviewsThunk(spot.id));
           })
           .catch(async (res) => {
             const data = await res.json();

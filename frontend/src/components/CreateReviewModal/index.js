@@ -5,8 +5,6 @@ import { useEffect, useState } from "react";
 import { useModal } from "../../context/Modal";
 import "./CreateReviewModal.css";
 import "./Rating"
-import { singleSpotThunk } from "../../store/spot";
-import { spotReviewsThunk } from "../../store/review";
 import { createReviewThunk } from "../../store/review";
 import Rating from "./Rating";
 
@@ -50,8 +48,6 @@ function CreateReviewModal({ spot }) {
     return dispatch(createReviewThunk(spot.id, submittedReview))
       .then(() => {
         closeModal();
-        dispatch(singleSpotThunk(spot.id));
-        dispatch(spotReviewsThunk(spot.id));
       })
       .catch(async (res) => {
         const data = await res.json();
