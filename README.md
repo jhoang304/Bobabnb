@@ -218,7 +218,7 @@ erDiagram
         integer id PK
         integer spotId FK "Spots.id"
         integer userId FK "Users.id"
-        string review
+        text review
         integer stars "1 to 5"
     }
     ReviewImages {
@@ -648,7 +648,7 @@ Returns `200` with `{ "Reviews": [ ... ] }`, in the same shape as [Get reviews f
 }
 ```
 
-Returns `201` with the new review (`id`, `spotId`, `userId`, `review`, `stars`, `createdAt`, `updatedAt`). You can review a spot only once. Reviews longer than 255 characters fail on PostgreSQL ([#19](https://github.com/jhoang304/Bobabnb/issues/19)).
+Returns `201` with the new review (`id`, `spotId`, `userId`, `review`, `stars`, `createdAt`, `updatedAt`). You can review a spot only once.
 
 | Status | When | Body |
 | --- | --- | --- |
