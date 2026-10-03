@@ -428,8 +428,8 @@ Optional query parameters:
 
 | Parameter | Type | Default |
 | --- | --- | --- |
-| `page` | integer, 1 or more | `1` |
-| `size` | integer, 1 or more | `20` |
+| `page` | whole number, 1 or more | `1` |
+| `size` | whole number, 1 or more; values above 20 are capped at 20 | `20` |
 | `minLat`, `maxLat`, `minLng`, `maxLng` | decimal | |
 | `minPrice`, `maxPrice` | decimal, 0 or more | |
 
@@ -457,21 +457,22 @@ Returns `200`:
     }
   ],
   "page": 1,
-  "size": 20
+  "size": 20,
+  "total": 18
 }
 ```
 
+Spots are ordered by `id`. `page` and `size` are the values actually used, after defaults and the size cap. `total` is the number of spots that match the filters across all pages. A `page` past the last spot returns an empty `Spots` array.
+
 | Status | When | Body |
 | --- | --- | --- |
-| `400` | A query parameter is invalid | `"message": "Validation error", "errors": { "page": "Page must be greater than or equal to 1", "size": "Size must be greater than or equal to 1", "minLat": "Minimum latitude is invalid", "maxLat": "Maximum latitude is invalid", "minLng": "Minimum longitude is invalid", "maxLng": "Maximum longitude is invalid", "minPrice": "Minimum price must be a decimal greater than or equal to 0", "maxPrice": "Maximum price must be a decimal greater than or equal to 0" }` |
+| `400` | A query parameter is invalid | `"message": "Validation error", "errors": { "page": "Page must be a whole number greater than or equal to 1", "size": "Size must be a whole number greater than or equal to 1", "minLat": "Minimum latitude is invalid", "maxLat": "Maximum latitude is invalid", "minLng": "Minimum longitude is invalid", "maxLng": "Maximum longitude is invalid", "minPrice": "Minimum price must be a decimal greater than or equal to 0", "maxPrice": "Maximum price must be a decimal greater than or equal to 0" }` |
 
 `previewImage` is `null` for a spot with no image marked as its preview.
 
 Current limitations:
 
 - `avgRating` is `0` for a spot with no reviews ([#20](https://github.com/jhoang304/Bobabnb/issues/20)).
-- Pagination only applies when `page` is 10 or less and `size` is 20 or less. Outside that range, every matching spot is returned ([#15](https://github.com/jhoang304/Bobabnb/issues/15)).
-- `page` and `size` are echoed back as sent, so they are strings when passed in the query string ([#15](https://github.com/jhoang304/Bobabnb/issues/15)).
 
 #### Get your spots
 
