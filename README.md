@@ -94,19 +94,19 @@ To start over with fresh seed data, delete `backend/db/dev.db` and run both comm
 
 ### 4. Start the servers
 
-Use two terminals:
+Use two terminals, both in the repo root:
 
 ```bash
 # Terminal 1: API on http://localhost:8000, restarts on changes (nodemon)
-cd backend
-npm start
+npm run dev:backend
 ```
 
 ```bash
 # Terminal 2: React dev server on http://localhost:3000
-cd frontend
-npm start
+npm run dev:frontend
 ```
+
+Don't use `npm start` in `backend/` for local development on Windows. It goes through `per-env`, which can't start `npm` on Windows and exits without running anything. It works on macOS and Linux, including Render.
 
 Open http://localhost:3000. The React dev server proxies `/api` requests to `http://localhost:8000` (the `proxy` field in `frontend/package.json`), so keep `PORT=8000` or update the proxy to match.
 
@@ -137,7 +137,8 @@ The backend reads these from `backend/.env` in development and from the host's e
 
 | Where | Command | What it does |
 | --- | --- | --- |
-| `backend/` | `npm start` | Runs `nodemon ./bin/www` in development, or `node ./bin/www` when `NODE_ENV=production` |
+| `backend/` | `npm start` | Runs `start:development` or `start:production` through `per-env`, based on `NODE_ENV`. Doesn't start anything on Windows (see [Getting started](#4-start-the-servers)). |
+| `backend/` | `npm run start:development` | Runs `nodemon ./bin/www` |
 | `backend/` | `npx dotenv sequelize <command>` | Runs a Sequelize CLI command (`db:migrate`, `db:seed:all`, `db:migrate:undo:all`, ...) with `.env` loaded |
 | `backend/` | `npm run build` | Creates the PostgreSQL schema named by `SCHEMA` if it doesn't exist (production only) |
 | `backend/` | `npm test` | Runs the backend unit tests (`*.test.js`) with Node's built-in test runner |
@@ -147,8 +148,8 @@ The backend reads these from `backend/.env` in development and from the host's e
 | root | `npm run render-postbuild` | Builds the React app |
 | root | `npm run build` | Runs the backend `build` script |
 | root | `npm start` | Starts the backend. In production it also serves the React build. |
-
-The root `dev:backend` and `dev:frontend` scripts don't work yet ([#18](https://github.com/jhoang304/Bobabnb/issues/18)). Run `npm start` inside `backend/` and `frontend/` instead.
+| root | `npm run dev:backend` | Runs `start:development` in `backend/` (nodemon) |
+| root | `npm run dev:frontend` | Same as `npm start` in `frontend/` |
 
 ## Deployment
 
