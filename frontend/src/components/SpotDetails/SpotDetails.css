@@ -160,6 +160,8 @@
 .reviewDescription {
     font-size: 14pt;
     word-wrap: break-word;
+    /* Keep the line breaks people type in the review textarea */
+    white-space: pre-line;
 }
 
 .reviewUser {
