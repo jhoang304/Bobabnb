@@ -188,31 +188,48 @@ export const deleteSpotThunk = (spotId) => async (dispatch) => {
 // }
 
 
+const byId = list => Object.fromEntries(list.map(item => [item.id, item]));
+
+// allSpots (homepage) and userSpots (Manage Spots) are stored by id; singleSpot is the spot on the details page.
 export const spotReducer = (state =  {}, action) => {
-    let newState;
     switch(action.type) {
         case GET_ALL_SPOTS:
-            newState = {...state, allSpots: action.spots}
-            return newState
+            return {...state, allSpots: byId(action.spots)}
         case GET_SPOT_DETAILS:
-            newState = {...state, singleSpot: action.spot}
-            return newState
+            return {...state, singleSpot: action.spot}
         // case CREATE_SPOT:
         //     newState = {...state, allSpots: {...state.AllSpots, [action.spot.id]: action.spot}}
         //     return newState;
         // case ADD_IMAGE:
         //     newState = {...state, singleSpot: {...state.singleSpot, spotImages: [action.image]}}
         case GET_USER_SPOTS:
-            newState =  {...state, allSpots: action.spots}
-            return newState
+            return {...state, userSpots: byId(action.spots)}
         case UPDATE_SPOT: {
-            newState = {...state, singleSpot: action.spot}
-            return newState
+            // The update response has only the spot's own columns, so merge it to keep fields like
+            // previewImage, avgRating, SpotImages and Owner that came from the other endpoints
+            const { spot } = action;
+            const merge = list => list && list[spot.id] ? {...list, [spot.id]: {...list[spot.id], ...spot}} : list;
+            return {
+                ...state,
+                allSpots: merge(state.allSpots),
+                userSpots: merge(state.userSpots),
+                singleSpot: state.singleSpot && state.singleSpot.id === spot.id ? {...state.singleSpot, ...spot} : spot
+            }
         }
-        case DELETE_SPOT:
-            newState = {...state}
-            delete newState[action.spotId];
-            return newState
+        case DELETE_SPOT: {
+            const without = list => {
+                if (!list) return list;
+                const rest = {...list};
+                delete rest[action.spotId];
+                return rest;
+            };
+            return {
+                ...state,
+                allSpots: without(state.allSpots),
+                userSpots: without(state.userSpots),
+                singleSpot: state.singleSpot && state.singleSpot.id === action.spotId ? null : state.singleSpot
+            }
+        }
         default:
             return state
     }

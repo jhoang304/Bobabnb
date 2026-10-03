@@ -36,8 +36,9 @@ const DELETE_REVIEW = 'spots/review/delete'
 
 
 
-const getSpotReviews = reviews => ({
+const getSpotReviews = (spotId, reviews) => ({
     type: GET_ALL_SPOT_REVIEWS,
+    spotId,
     reviews
 })
 
@@ -51,15 +52,15 @@ const createReview = review => ({
     review
 })
 
-const deleteReview = reviewId => ({
+const deleteReview = review => ({
     type: DELETE_REVIEW,
-    reviewId
+    review
 })
 export const spotReviewsThunk = (spotId) => async (dispatch) => {
     const res = await csrfFetch(`/api/spots/${spotId}/reviews`)
     const reviews = await res.json();
     if (res.ok) {
-        dispatch(getSpotReviews(reviews["Reviews"]))
+        dispatch(getSpotReviews(spotId, reviews["Reviews"]))
     }
     return reviews;
 }
@@ -77,7 +78,7 @@ export const getCurrentUserReviewsThunk = (review) => async (dispatch) => {
 }
 
 // csrfFetch throws the response when the server rejects the review, so callers can read its errors
-export const createReviewThunk = (spotId, review) => async (dispatch) => {
+export const createReviewThunk = (spotId, review) => async (dispatch, getState) => {
     const res = await csrfFetch(`/api/spots/${spotId}/reviews`, {
         method: 'POST',
         headers: {
@@ -86,39 +87,56 @@ export const createReviewThunk = (spotId, review) => async (dispatch) => {
         body: JSON.stringify(review)
     })
     const newReview = await res.json();
+    // The create response doesn't include the author or images the review list shows
+    const { id, firstName, lastName } = getState().session.user;
+    newReview.User = { id, firstName, lastName };
+    newReview.ReviewImages = [];
     dispatch(createReview(newReview))
     return newReview
 }
 
-export const deleteReviewThunk = (reviewId) => async (dispatch) => {
-    const res = await csrfFetch(`/api/reviews/${reviewId}`, {
+export const deleteReviewThunk = (review) => async (dispatch) => {
+    const res = await csrfFetch(`/api/reviews/${review.id}`, {
         method: 'DELETE'
     })
     if (res.ok) {
-        dispatch(deleteReview(reviewId))
+        dispatch(deleteReview(review))
     } else {
         const errorData = await res.json()
         return errorData
     }
 }
 
+const byId = list => Object.fromEntries(list.map(item => [item.id, item]));
 
-export const reviewReducer = (state =  {}, action) => {
-    let newState;
+// bySpot[spotId] holds that spot's reviews by id; userReviews holds the current user's reviews by id.
+export const reviewReducer = (state = { bySpot: {} }, action) => {
     switch(action.type) {
         case GET_ALL_SPOT_REVIEWS:
-            newState = {...state, reviews: action.reviews}
-            return newState
+            return {...state, bySpot: {...state.bySpot, [action.spotId]: byId(action.reviews)}}
         case GET_CURRENT_USER_REVIEWS:
-            newState = {...state, reviews: action.reviews}
-            return newState
-        case CREATE_REVIEW:
-            newState = {...state, review: action.reviews}
-            return newState
-        case DELETE_REVIEW:
-            newState = {...state}
-            delete newState[action.reviewId];
-            return newState
+            return {...state, userReviews: byId(action.reviews)}
+        case CREATE_REVIEW: {
+            const { review } = action;
+            const spotReviews = state.bySpot[review.spotId];
+            // If this spot's reviews haven't been loaded, the next fetch will include the new one
+            if (!spotReviews) return state;
+            return {...state, bySpot: {...state.bySpot, [review.spotId]: {...spotReviews, [review.id]: review}}}
+        }
+        case DELETE_REVIEW: {
+            const { review } = action;
+            const without = list => {
+                if (!list) return list;
+                const rest = {...list};
+                delete rest[review.id];
+                return rest;
+            };
+            return {
+                ...state,
+                bySpot: {...state.bySpot, [review.spotId]: without(state.bySpot[review.spotId])},
+                userReviews: without(state.userReviews)
+            }
+        }
         default:
             return state
     }

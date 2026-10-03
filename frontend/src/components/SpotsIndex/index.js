@@ -7,7 +7,8 @@ import "./SpotsIndex.css";
 
 export default function SpotsIndex() {
   const dispatch = useDispatch();
-  const spots = useSelector((state) => state.spot.allSpots);
+  const spotsById = useSelector((state) => state.spot.allSpots);
+  const spots = spotsById && Object.values(spotsById);
 
   useEffect(() => {
     dispatch(allSpotsThunk());

@@ -10,7 +10,8 @@ import SpotDeleteModal from "../SpotDeleteModal";
 export default function ManageSpots() {
   // const history = useHistory();
   const dispatch = useDispatch();
-  const spots = useSelector((state) => state.spot.allSpots);
+  const spotsById = useSelector((state) => state.spot.userSpots);
+  const spots = spotsById && Object.values(spotsById);
   console.log(spots);
 
   useEffect(() => {

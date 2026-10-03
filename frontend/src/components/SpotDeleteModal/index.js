@@ -4,7 +4,6 @@ import { useHistory } from "react-router-dom/cjs/react-router-dom.min";
 import { useModal } from "../../context/Modal";
 import "./SpotDeleteModal.css";
 import { deleteSpotThunk } from "../../store/spot";
-import { getUserSpotsThunk } from "../../store/spot";
 
 export default function SpotDeleteModal({ spot }) {
   const [errors, setErrors] = useState({});
@@ -19,7 +18,6 @@ export default function SpotDeleteModal({ spot }) {
     return dispatch(deleteSpotThunk(spot.id))
       .then(() => {
         closeModal();
-        dispatch(getUserSpotsThunk());
         history.push("/spots/current");
       })
       .catch(async (res) => {
