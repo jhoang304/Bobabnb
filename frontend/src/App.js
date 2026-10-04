@@ -9,6 +9,8 @@ import NewSpot from "./components/NewSpot";
 import ManageSpots from "./components/ManageSpots";
 import UpdateSpot from "./components/UpdateSpot";
 import Footer from "./components/Footer";
+import ProtectedRoute from "./components/ProtectedRoute";
+import NotFound from "./components/NotFound";
 
 function App() {
   const dispatch = useDispatch();
@@ -23,10 +25,12 @@ function App() {
       <main className="App-main">
         {isLoaded && <Switch>
           <Route exact path='/'><SpotsIndex /></Route>
-          <Route exact path='/spots/new'><NewSpot /></Route>
-          <Route exact path='/spots/current'><ManageSpots /></Route>
-          <Route exact path='/spots/:spotId/edit'><UpdateSpot /></Route>
-          <Route exact path='/spots/:spotId'><SpotDetails /></Route>
+          <ProtectedRoute exact path='/spots/new'><NewSpot /></ProtectedRoute>
+          <ProtectedRoute exact path='/spots/current'><ManageSpots /></ProtectedRoute>
+          {/* Spot ids are numbers, so /spots/abc falls through to the 404 page */}
+          <ProtectedRoute exact path='/spots/:spotId(\d+)/edit'><UpdateSpot /></ProtectedRoute>
+          <Route exact path='/spots/:spotId(\d+)'><SpotDetails /></Route>
+          <Route><NotFound /></Route>
           </Switch>}
       </main>
       <Footer />

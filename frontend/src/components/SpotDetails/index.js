@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { singleSpotThunk } from "../../store/spot";
 import { spotReviewsThunk } from "../../store/review";
 import { useParams } from "react-router-dom";
@@ -8,6 +8,7 @@ import OpenModalButton from "../OpenModalButton";
 import CreateReviewModal from "../CreateReviewModal";
 import DeleteReviewModal from "../DeleteReviewModal";
 import { NO_PHOTO } from "../../constants";
+import NotFound from "../NotFound";
 
 export default function SpotDetail() {
   const { spotId } = useParams();
@@ -16,15 +17,21 @@ export default function SpotDetail() {
   const reviewsById = useSelector((state) => state.review.bySpot[spotId]);
   // const user = useSelector((state) => state.review.reviews);
   const sessionUser = useSelector((state) => state.session.user);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    dispatch(singleSpotThunk(spotId));
-    console.log("spot:", spot);
+    setNotFound(false);
+    dispatch(singleSpotThunk(spotId)).catch(() => setNotFound(true));
   }, [dispatch, spotId]);
 
   useEffect(() => {
-    dispatch(spotReviewsThunk(spotId));
+    // A missing spot is reported by the request above
+    dispatch(spotReviewsThunk(spotId)).catch(() => {});
   }, [dispatch, spotId]);
+
+  if (notFound) {
+    return <NotFound message="That spot doesn't exist or has been deleted." />;
+  }
 
   if (!spot) {
     return <div>Loading Spot...</div>;

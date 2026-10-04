@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { updateSpotThunk, singleSpotThunk, spotFormErrors } from '../../store/spot'
 import { useHistory } from 'react-router-dom/cjs/react-router-dom.min'
 import { useParams } from 'react-router-dom/cjs/react-router-dom.min'
+import { Redirect } from 'react-router-dom'
+import NotFound from '../NotFound'
 import './UpdateSpot.css'
 
 function UpdateSpot() {
@@ -20,12 +22,15 @@ function UpdateSpot() {
     const [price, setPrice] = useState("")
     const [validationErrors, setValidationErrors] = useState({})
     const [serverError, setServerError] = useState("")
+    const [notFound, setNotFound] = useState(false)
 
     const spot = useSelector((state) => state.spot.singleSpot);
+    const sessionUser = useSelector((state) => state.session.user);
 
     useEffect(() => {
         setServerError("");
-        dispatch(singleSpotThunk(spotId));
+        setNotFound(false);
+        dispatch(singleSpotThunk(spotId)).catch(() => setNotFound(true));
     }, [dispatch, spotId]);
 
 
@@ -108,6 +113,18 @@ function UpdateSpot() {
       setServerError(general);
     }
   };
+
+  if (notFound) {
+    return <NotFound message="That spot doesn't exist or has been deleted." />;
+  }
+  // Wait for this spot, not one left over from another page, before showing the form
+  if (!spot || spot.id !== Number(spotId)) {
+    return <div>Loading Spot...</div>;
+  }
+  // Only the owner can edit a spot; anyone else is sent to its page
+  if (spot.ownerId !== sessionUser.id) {
+    return <Redirect to={`/spots/${spotId}`} />;
+  }
 
   return (
     <div className="createSpotContainer">
