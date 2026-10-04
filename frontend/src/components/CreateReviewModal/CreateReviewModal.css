@@ -26,7 +26,10 @@
 .comment-input {
     background-color: #E8F0FE;
     width: 100%;
-    padding: 5px 0px;
+    padding: 5px;
+    box-sizing: border-box;
+    font: inherit;
+    resize: vertical;
 }
 
 .filled {

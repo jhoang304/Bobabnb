@@ -65,8 +65,8 @@ function CreateReviewModal({ spot }) {
     <div id="postReviewContainer">
       <div className="postReviewHeading">How was your stay?</div>
       <label>
-        <input
-          type="text"
+        <textarea
+          rows={5}
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           className="comment-input"
