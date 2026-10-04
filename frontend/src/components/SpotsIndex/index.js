@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { allSpotsThunk } from "../../store/spot";
 import { NO_PHOTO } from "../../constants";
+import RatingBadge from "../RatingBadge";
 import "./SpotsIndex.css";
 
 export default function SpotsIndex() {
@@ -25,17 +26,7 @@ export default function SpotsIndex() {
                 <p>
                   {spot.city}, {spot.state}
                 </p>
-                {spot.avgRating === 0 ? (
-                  <div className="reviews">
-                    <i className="fa-solid fa-star"></i>
-                    <div className="newListing">New</div>
-                  </div>
-                ) : (
-                  <div className="reviews">
-                    <i className="fa-solid fa-star"></i>
-                    <div className="avgRating">{spot.avgRating.toFixed(2)}</div>
-                  </div>
-                )}
+                <RatingBadge rating={spot.avgRating} />
               </div>
               <div className="price-container">
                 <div className="price">${spot.price}</div> night

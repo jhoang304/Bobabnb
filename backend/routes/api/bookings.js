@@ -4,6 +4,7 @@ const { Op } = require('sequelize');
 
 const { requireAuth } = require('../../utils/auth');
 const { parseDate, validateBookingDates, findBookingConflicts } = require('../../utils/bookings');
+const { previewImageUrl } = require('../../utils/spots');
 const { User, Spot, SpotImage, Review, ReviewImage, Booking } = require('../../db/models');
 
 // Get all of the Current User's Bookings
@@ -27,11 +28,7 @@ router.get("/current", requireAuth, async (req, res) => {
     const bookingsList = bookings.map((booking) => {
     const bookingData = booking.toJSON();
     if (bookingData.Spot) {
-        bookingData.Spot.previewImage = 'none';
-        const prevImg = bookingData.Spot.SpotImages.find((el) => el.preview === true);
-        if (prevImg) {
-        bookingData.Spot.previewImage = prevImg.url;
-        }
+        bookingData.Spot.previewImage = previewImageUrl(bookingData.Spot.SpotImages);
         delete bookingData.Spot.SpotImages;
     }
     return bookingData;

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { requireAuth } = require('../../utils/auth');
+const { previewImageUrl } = require('../../utils/spots');
 const { User, Spot, SpotImage, Review, ReviewImage, Booking } = require('../../db/models');
 
 // Get all Reviews of the Current User
@@ -31,11 +32,7 @@ router.get('/current', requireAuth, async (req, res) => {
     const reviewsList = reviews.map(review => {
         const reviewData = review.toJSON();
         const spot = reviewData.Spot;
-        spot.previewImage = 'none';
-        const prevImg = spot.SpotImages.find(el => el.preview === true);
-        if (prevImg) {
-            spot.previewImage = prevImg.url;
-        }
+        spot.previewImage = previewImageUrl(spot.SpotImages);
         delete spot.SpotImages;
         return reviewData;
     });

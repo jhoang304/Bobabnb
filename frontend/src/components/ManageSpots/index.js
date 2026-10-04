@@ -6,6 +6,8 @@ import { getUserSpotsThunk } from "../../store/spot";
 import "./ManageSpots.css";
 import OpenModalButton from "../OpenModalButton";
 import SpotDeleteModal from "../SpotDeleteModal";
+import RatingBadge from "../RatingBadge";
+import { NO_PHOTO } from "../../constants";
 
 export default function ManageSpots() {
   // const history = useHistory();
@@ -41,7 +43,7 @@ export default function ManageSpots() {
                 <div className="spot-container" key={`spot-${spot.id}`}>
                   <Link to={`/spots/${spot.id}`}>
                     <div className="spot">
-                      <img src={spot.previewImage} alt="Spot Preview" />
+                      <img src={spot.previewImage || NO_PHOTO} alt="Spot Preview" />
                       {/* <h2>{spot.name}</h2>
                       <p>
                         City: {spot.city}, State: {spot.state}
@@ -52,17 +54,7 @@ export default function ManageSpots() {
                         <p>
                           {spot.city}, {spot.state}
                         </p>
-                        {spot.avgRating === null ? (
-                          <div className="reviews">
-                            <i className="fa-solid fa-star"></i>
-                            <div className="newListing">New</div>
-                          </div>
-                        ) : (
-                          <div className="reviews">
-                            <i className="fa-solid fa-star"></i>
-                            <div className="avgRating">{spot.avgRating}</div>
-                          </div>
-                        )}
+                        <RatingBadge rating={spot.avgRating} />
                       </div>
                       <div className="price-container">
                         <div className="price">${spot.price}</div> night
