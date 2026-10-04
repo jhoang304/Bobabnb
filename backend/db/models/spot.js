@@ -71,7 +71,10 @@ module.exports = (sequelize, DataTypes) => {
     },
     price: {
       type: DataTypes.DECIMAL,
-      allowNull: false
+      allowNull: false,
+      validate: {
+        min: { args: [0], msg: 'Price per day must be 0 or more' }
+      }
     },
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE

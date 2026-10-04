@@ -39,7 +39,12 @@ module.exports = (sequelize, DataTypes) => {
     },
     stars: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: false,
+      validate: {
+        isInt: { msg: 'Stars must be an integer from 1 to 5' },
+        min: { args: [1], msg: 'Stars must be an integer from 1 to 5' },
+        max: { args: [5], msg: 'Stars must be an integer from 1 to 5' }
+      }
     },
     createdAt: DataTypes.DATE,
     updatedAt: DataTypes.DATE

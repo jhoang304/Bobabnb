@@ -235,7 +235,7 @@ erDiagram
     }
 ```
 
-Every table also has `createdAt` and `updatedAt` timestamps. Only `SpotImages.spotId` and `Reviews.spotId` are foreign keys in the database itself (with `ON DELETE CASCADE`). The other relationships exist only as Sequelize associations ([#21](https://github.com/jhoang304/Bobabnb/issues/21)). The migrations are in [`backend/db/migrations`](backend/db/migrations).
+Every table also has `createdAt` and `updatedAt` timestamps. Every relationship in the diagram is a foreign key in the database with `ON DELETE CASCADE`, so deleting a user or spot also deletes everything that belongs to it, even when rows are deleted outside the app. The database also enforces one review per user per spot (a unique index on `Reviews (userId, spotId)`), `stars` between 1 and 5, and `price` of 0 or more. The migrations are in [`backend/db/migrations`](backend/db/migrations).
 
 ## Project structure
 
@@ -546,11 +546,12 @@ Returns `201` with the new spot, including `id`, `ownerId`, `createdAt` and `upd
 
 `PUT /api/spots/:spotId` · Auth required · Owner only
 
-Takes the same body and validation as [Create a spot](#create-a-spot), except that `price` has no minimum. Returns `200` with the updated spot.
+Takes the same body and validation as [Create a spot](#create-a-spot), except that `price` only has to be 0 or more. Returns `200` with the updated spot.
 
 | Status | When | Body |
 | --- | --- | --- |
 | `400` | A field is missing or invalid | Same as [Create a spot](#create-a-spot) |
+| `400` | `price` is negative | `"title": "Validation error", "errors": { "price": "Price per day must be 0 or more" }` |
 | `403` | You don't own the spot | `{ "message": "Only the owner can update this spot" }` |
 | `404` | No spot with that id | `{ "message": "Spot couldn't be found" }` |
 
@@ -649,6 +650,7 @@ Returns `201` with the new review (`id`, `spotId`, `userId`, `review`, `stars`, 
 | Status | When | Body |
 | --- | --- | --- |
 | `400` | `review` is missing, or `stars` isn't between 1 and 5 | `"message": "Bad Request", "errors": { "review": "Review text is required", "stars": "Stars must be an integer from 1 to 5" }`, with only the fields that failed |
+| `400` | `stars` isn't a whole number | `"title": "Validation error", "errors": { "stars": "Stars must be an integer from 1 to 5" }` |
 | `404` | No spot with that id | `{ "message": "Spot couldn't be found" }` |
 | `409` | You already reviewed this spot | `{ "message": "User already has a review for this spot" }` |
 
@@ -661,6 +663,7 @@ Takes the same body as [Create a review](#create-a-review) and returns `200` wit
 | Status | When | Body |
 | --- | --- | --- |
 | `400` | `review` is missing, or `stars` isn't between 1 and 5 | `"message": "Bad Request", "errors": { "review": "Review text is required", "stars": "Stars must be an integer from 1 to 5" }` |
+| `400` | `stars` isn't a whole number | `"title": "Validation error", "errors": { "stars": "Stars must be an integer from 1 to 5" }` |
 | `403` | You didn't write the review | `{ "message": "Only the owner can update this review" }` |
 | `404` | No review with that id | `{ "message": "Review couldn't be found" }` |
 
