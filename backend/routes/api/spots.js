@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Op } = require('sequelize')
+const { Op, UniqueConstraintError } = require('sequelize')
 const { requireAuth } = require('../../utils/auth');
 const { validateBookingDates, findBookingConflicts } = require('../../utils/bookings');
 const { averageRating, formatSpotSummary } = require('../../utils/spots');
@@ -291,12 +291,22 @@ router.post('/:spotId/reviews', requireAuth, async (req, res) => {
         return res.json({ message: "User already has a review for this spot" });
     }
 
-    const newReview = await Review.create({
-        userId,
-        spotId,
-        review,
-        stars
-    });
+    let newReview;
+    try {
+        newReview = await Review.create({
+            userId,
+            spotId,
+            review,
+            stars
+        });
+    } catch (err) {
+        // A concurrent request created the review after the check above; the unique index caught it
+        if (err instanceof UniqueConstraintError) {
+            res.status(409);
+            return res.json({ message: "User already has a review for this spot" });
+        }
+        throw err;
+    }
 
     res.status(201);
     return res.json(newReview);
