@@ -469,17 +469,13 @@ Spots are ordered by `id`. `page` and `size` are the values actually used, after
 | --- | --- | --- |
 | `400` | A query parameter is invalid | `"message": "Validation error", "errors": { "page": "Page must be a whole number greater than or equal to 1", "size": "Size must be a whole number greater than or equal to 1", "minLat": "Minimum latitude is invalid", "maxLat": "Maximum latitude is invalid", "minLng": "Minimum longitude is invalid", "maxLng": "Maximum longitude is invalid", "minPrice": "Minimum price must be a decimal greater than or equal to 0", "maxPrice": "Maximum price must be a decimal greater than or equal to 0" }` |
 
-`previewImage` is `null` for a spot with no image marked as its preview.
-
-Current limitations:
-
-- `avgRating` is `0` for a spot with no reviews ([#20](https://github.com/jhoang304/Bobabnb/issues/20)).
+`avgRating` is `null` for a spot with no reviews, and `previewImage` is `null` for a spot with no image marked as its preview.
 
 #### Get your spots
 
 `GET /api/spots/current` · Auth required
 
-Returns `200` with `{ "Spots": [ ... ] }`. Each spot has the same shape as in [Get all spots](#get-all-spots), with no `page` or `size`. A spot with no reviews has `"avgRating": null`, and a spot with no preview image has `"previewImage": "none"` ([#20](https://github.com/jhoang304/Bobabnb/issues/20)).
+Returns `200` with `{ "Spots": [ ... ] }`. Each spot has the same shape as in [Get all spots](#get-all-spots), including `null` for `avgRating` and `previewImage`, with no `page`, `size` or `total`.
 
 #### Get spot details
 
@@ -584,15 +580,15 @@ Returns `200` with `{ "id": 81, "url": "https://example.com/teahouse.jpg", "prev
 
 | Status | When | Body |
 | --- | --- | --- |
+| `400` | `url` is missing | `"message": "Bad Request", "errors": { "url": "Image URL is required" }` |
 | `403` | You don't own the spot | `{ "message": "Only the owner can add images to this spot" }` |
 | `404` | No spot with that id | `{ "message": "Spot couldn't be found" }` |
-| `404` | `url` is missing (should be `400`, [#20](https://github.com/jhoang304/Bobabnb/issues/20)) | `{ "message": "Image is required" }` |
 
 #### Delete a spot image
 
 `DELETE /api/spot-images/:imageId` · Auth required · Spot owner only
 
-Returns `200` with `{ "message": "successfully deleted" }`.
+Returns `200` with `{ "message": "Successfully deleted" }`.
 
 | Status | When | Body |
 | --- | --- | --- |
@@ -635,7 +631,7 @@ Returns `200`:
 
 `GET /api/reviews/current` · Auth required
 
-Returns `200` with `{ "Reviews": [ ... ] }`, in the same shape as [Get reviews for a spot](#get-reviews-for-a-spot). Each review also has a `Spot` object that leaves out `description`, `createdAt` and `updatedAt` and adds `previewImage` (`"none"` if the spot has no preview image).
+Returns `200` with `{ "Reviews": [ ... ] }`, in the same shape as [Get reviews for a spot](#get-reviews-for-a-spot). Each review also has a `Spot` object that leaves out `description`, `createdAt` and `updatedAt` and adds `previewImage` (`null` if the spot has no preview image).
 
 #### Create a review
 
@@ -654,7 +650,7 @@ Returns `201` with the new review (`id`, `spotId`, `userId`, `review`, `stars`, 
 | --- | --- | --- |
 | `400` | `review` is missing, or `stars` isn't between 1 and 5 | `"message": "Bad Request", "errors": { "review": "Review text is required", "stars": "Stars must be an integer from 1 to 5" }`, with only the fields that failed |
 | `404` | No spot with that id | `{ "message": "Spot couldn't be found" }` |
-| `500` | You already reviewed this spot | `{ "message": "User already has a review for this spot" }` |
+| `409` | You already reviewed this spot | `{ "message": "User already has a review for this spot" }` |
 
 #### Edit a review
 
@@ -702,7 +698,7 @@ Returns `200` with `{ "id": 13, "url": "https://example.com/my-drink.jpg" }`. A 
 
 `DELETE /api/review-images/:imageId` · Auth required · Review author only
 
-Returns `200` with `{ "message": "successfully deleted" }`.
+Returns `200` with `{ "message": "Successfully deleted" }`.
 
 | Status | When | Body |
 | --- | --- | --- |
@@ -715,7 +711,7 @@ Returns `200` with `{ "message": "successfully deleted" }`.
 
 `GET /api/bookings/current` · Auth required
 
-Returns `200`:
+Returns `200`. Each booking's `Spot` has `previewImage`, which is `null` if the spot has no preview image:
 
 ```json
 {
@@ -794,7 +790,7 @@ If you own the spot, each booking has every field plus the guest:
 }
 ```
 
-Returns `200` with the new booking (`id`, `spotId`, `userId`, `startDate`, `endDate`, `createdAt`, `updatedAt`).
+Returns `201` with the new booking (`id`, `spotId`, `userId`, `startDate`, `endDate`, `createdAt`, `updatedAt`).
 
 | Status | When | Body |
 | --- | --- | --- |

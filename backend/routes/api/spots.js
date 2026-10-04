@@ -3,6 +3,7 @@ const router = express.Router();
 const { Op } = require('sequelize')
 const { requireAuth } = require('../../utils/auth');
 const { validateBookingDates, findBookingConflicts } = require('../../utils/bookings');
+const { averageRating, formatSpotSummary } = require('../../utils/spots');
 const { User, Spot, SpotImage, Review, ReviewImage, Booking } = require('../../db/models');
 
 //Get all Spots owned by Current User
@@ -17,23 +18,7 @@ router.get('/current', requireAuth, async (req, res) => {
                 ]
         });
 
-        const spotsList = spots.map(spot => {
-            const spotData = spot.toJSON();
-            const sum = spotData.Reviews.reduce((total, review) => total + review.stars, 0);
-            spotData.avgRating = sum / spotData.Reviews.length;
-            delete spotData.Reviews;
-
-            spotData.previewImage = 'none';
-            const prevImg = spotData.SpotImages.find(el => el.preview === true);
-            if (prevImg) {
-                spotData.previewImage = prevImg.url;
-            }
-            delete spotData.SpotImages;
-
-            return spotData;
-        });
-
-        const result = { Spots: spotsList };
+        const result = { Spots: spots.map(formatSpotSummary) };
         return res.json(result);
     } catch (error) {
         console.error(error);
@@ -45,6 +30,11 @@ router.get('/current', requireAuth, async (req, res) => {
 // Get all Reviews by a Spot's id
 router.get('/:spotId/reviews', async (req, res) => {
     const { spotId } = req.params;
+
+    const findSpot = await Spot.findByPk(spotId);
+    if(!findSpot) {
+        return res.status(404).json({message: "Spot couldn't be found"});
+    };
 
     const reviews = await Review.findAll({
         where: { spotId: spotId },
@@ -59,11 +49,6 @@ router.get('/:spotId/reviews', async (req, res) => {
             }
         ]
     });
-
-    const findSpot = await Spot.findByPk(spotId);
-    if(!findSpot) {
-        return res.status(404).json({message: "Spot couldn't be found"});
-    };
 
     return res.json({Reviews: reviews});
 });
@@ -109,14 +94,10 @@ router.get('/:spotId', async (req, res) => {
         const item = await Spot.findOne({
             where: { id: spotId },
             include: [
-                { model: Review },
-                {
-                model: SpotImage,
-                attributes: {
-                    exclude: ['spotId', 'createdAt', 'updatedAt']
-                }
-            }
-        ]
+                { model: Review, attributes: ['stars'] },
+                { model: SpotImage, attributes: ['id', 'url', 'preview'] },
+                { model: User, attributes: ['id', 'firstName', 'lastName'] }
+            ]
         });
 
         if (!item) {
@@ -124,23 +105,14 @@ router.get('/:spotId', async (req, res) => {
             return res.json({ message: "Spot couldn't be found" });
         }
 
-        let spot = item.toJSON();
-
-        spot.numReviews = spot.Reviews.length;
-
-        const sum = spot.Reviews.reduce((total, review) => total + review.stars, 0);
-        spot.avgStarRating = sum / spot.Reviews.length;
-        delete spot.Reviews;
-
-        const imgHolder = spot.SpotImages;
-        delete spot.SpotImages;
-        spot.SpotImages = imgHolder;
-
-        spot.Owner = await User.findByPk(spot.ownerId, {
-        attributes: ['id', 'firstName', 'lastName']
+        const { Reviews, SpotImages, User: Owner, ...spot } = item.toJSON();
+        return res.json({
+            ...spot,
+            numReviews: Reviews.length,
+            avgStarRating: averageRating(Reviews),
+            SpotImages,
+            Owner
         });
-
-        return res.json(spot);
     } catch (error) {
         console.error(error);
         res.status(500)
@@ -236,21 +208,7 @@ router.get('/', async (req, res) => {
     });
     const total = await Spot.count({ where: query });
 
-    const spotsList = spots.map(spot => {
-        const spotData = spot.toJSON();
-        const sum = spotData.Reviews.reduce((total, review) => total + review.stars, 0);
-        spotData.avgRating = sum / spotData.Reviews.length || 0;
-
-        const spotImage = spotData.SpotImages.find(image => image.url);
-        spotData.previewImage = spotImage ? spotImage.url : null;
-
-        delete spotData.Reviews;
-        delete spotData.SpotImages;
-
-        return spotData;
-    });
-
-    const result = { Spots: spotsList, page, size, total };
+    const result = { Spots: spots.map(formatSpotSummary), page, size, total };
     return res.json(result);
 });
 
@@ -276,8 +234,11 @@ router.post('/:spotId/images', requireAuth, async (req, res) => {
         return res.json({ message: "Only the owner can add images to this spot" });
     };
     if(!url) {
-        res.status(404)
-        return res.json({ message: "Image is required"})
+        res.status(400)
+        return res.json({
+            message: "Bad Request",
+            errors: { url: "Image URL is required" }
+        })
     };
 
     const newImg = await SpotImage.create({
@@ -326,7 +287,7 @@ router.post('/:spotId/reviews', requireAuth, async (req, res) => {
         }
     });
     if (exists) {
-        res.status(500);
+        res.status(409);
         return res.json({ message: "User already has a review for this spot" });
     }
 
@@ -389,6 +350,7 @@ router.post('/:spotId/bookings', requireAuth, async (req, res) => {
     endDate
     });
 
+    res.status(201);
     return res.json(newBooking);
 });
 
